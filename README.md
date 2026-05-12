@@ -2,19 +2,25 @@
 # 🧪 2026 - Trabajo Práctico Anual
 
 ## 👤 Datos del Alumno
-- **Nombre:**
-- **Apellido:**
+- **Nombre: Cristian Iván**
+- **Apellido: Perna**
 
 ---
 
 🧩 Componente Desarrollado
--
+- Servicio de Logística
 
 ---
 
 🧩 Link al despliegue en Render
 -
+-
 
+---
+
+🧩 Link de la API implementada en Swagger
+- 
+- https://app.swaggerhub.com/apis/utnba-1ae/logistica-api/1.0.0#/
 ---
 
 ### ⚠️ Importante
