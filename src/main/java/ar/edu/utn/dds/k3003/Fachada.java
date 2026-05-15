@@ -25,9 +25,10 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import lombok.val;
+import org.springframework.stereotype.Component;
 
+@Component
 public class Fachada implements FachadaLogistica {
-
 
   public Fachada() {
 
@@ -75,6 +76,17 @@ public class Fachada implements FachadaLogistica {
 
   }
 
+
+  public List<DepositoDTO> obtenerDepositos() {
+    return depositoRepository.findAll().stream().map(deposito -> new DepositoDTO(
+                    deposito.getId(),
+                    deposito.getAlgoritmoMatchmaking(),
+                    deposito.getNombre(),
+                    deposito.getDireccion(),
+                    deposito.getCapacidadMaxima(),
+                    List.of()
+            )).toList();
+  }
 
 
   @Override

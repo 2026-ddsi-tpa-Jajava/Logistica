@@ -2,7 +2,6 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
-import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +12,11 @@ import java.util.NoSuchElementException;
 @RequestMapping("/entregas")
 public class EntregaController {
 
-    private final FachadaLogistica fachada = new Fachada();
+    private Fachada fachada;
+
+    public EntregaController(Fachada fachada) {
+        this.fachada = fachada;
+    }
 
     // POST reportar entrega
     @PostMapping

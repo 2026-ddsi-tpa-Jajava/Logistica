@@ -2,7 +2,6 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
-import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +12,11 @@ import java.util.NoSuchElementException;
 @RequestMapping("/asignaciones")
 public class AsignacionController {
 
-    private final FachadaLogistica fachada = new Fachada();
+    private Fachada fachada;
+
+    public AsignacionController(Fachada fachada) {
+        this.fachada = fachada;
+    }
 
     // GET asignacion de un paquete
     @GetMapping("/{idPaquete}")

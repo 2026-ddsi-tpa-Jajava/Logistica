@@ -31,4 +31,11 @@ public class DepositoRepositoryMemoria implements DepositoRepository{
     }
 
 
+    @Override
+    public List<Deposito> findAll() {
+        return new ArrayList<>(depositos);
+    }
+
+
+
 }

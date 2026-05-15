@@ -3,10 +3,10 @@ package ar.edu.utn.dds.k3003.controllers;
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
-import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 
@@ -14,7 +14,11 @@ import java.util.NoSuchElementException;
 @RequestMapping("/depositos")
 public class DepositoController {
 
-    private final FachadaLogistica fachada = new Fachada();
+    private Fachada fachada;
+
+    public DepositoController(Fachada fachada) {
+        this.fachada = fachada;
+    }
 
     // POST deposito
     @PostMapping
@@ -31,6 +35,20 @@ public class DepositoController {
             return ResponseEntity.internalServerError().body("Error interno al crear el depósito");
         }
     }
+
+    // GET depositos
+    @GetMapping
+    public ResponseEntity<?> obtenerDepositos() {
+
+        try {
+            List<DepositoDTO> depositos = fachada.obtenerDepositos();
+            return ResponseEntity.ok(depositos);
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.internalServerError().body("Error al obtener los depósitos");
+        }
+    }
+
 
     // GET deposito por id
     @GetMapping("/{id}")

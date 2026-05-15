@@ -156,5 +156,24 @@ public class LogisticaTest {
     }
 
 
+    @Test
+    public void testObtenerDepositos() {
+
+        Fachada fachada = new Fachada();
+
+        // Crear depositos
+        fachada.agregarDeposito(new DepositoDTO(null, null, "Deposito 1", "Direccion 1", 100, List.of()));
+
+        fachada.agregarDeposito(new DepositoDTO(null, null, "Deposito 2", "Direccion 2", 200, List.of()));
+
+        List<DepositoDTO> depositos = fachada.obtenerDepositos();
+
+        assertNotNull(depositos);
+        assertEquals(2, depositos.size());
+        assertEquals("Deposito 1", depositos.get(0).nombre());
+        assertEquals("Deposito 2", depositos.get(1).nombre());
+    }
+
+
 }
 
