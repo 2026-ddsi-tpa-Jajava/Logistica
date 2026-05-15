@@ -70,25 +70,19 @@ public class LogisticaTest {
 
         fachadaLogistica = new Fachada();
 
-        DepositoDTO deposito =
-                fachadaLogistica.agregarDeposito(
-                        new DepositoDTO(null, null, "Deposito Test", "Direccion", 100, null)
-                );
+        DepositoDTO deposito = fachadaLogistica.agregarDeposito(new DepositoDTO(null, null, "Deposito Test", "Direccion", 100, null));
 
         fachadaLogistica.setAlgoritmoMM(deposito.id(), TipoAlgoritmoEnum.SUB_ATENDIDOS);
 
         PaqueteDTO paquete = new PaqueteDTO("1", "donacion1", "fideos", 5);
 
-        NecesidadMaterialDTO necesidad1 =
-                new NecesidadMaterialDTO("n1", "e1", 3, "descripcion", 10, "fideos", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
+        NecesidadMaterialDTO necesidad1 = new NecesidadMaterialDTO("n1", "e1", 3, "descripcion", 10, "fideos", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
 
-        NecesidadMaterialDTO necesidad2 =
-                new NecesidadMaterialDTO("n2", "e2", 5, "descripcion", 20, "fideos", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
+        NecesidadMaterialDTO necesidad2 = new NecesidadMaterialDTO("n2", "e2", 5, "descripcion", 20, "fideos", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
 
         List<NecesidadMaterialDTO> necesidades = List.of(necesidad1, necesidad2);
 
-        AsignacionDTO asignacion =
-                fachadaLogistica.ejecutarMatchmaking(deposito.id(), paquete, necesidades);
+        AsignacionDTO asignacion = fachadaLogistica.ejecutarMatchmaking(deposito.id(), paquete, necesidades);
 
         assertNotNull(asignacion);
         assertEquals("n2", asignacion.necesidadID());
@@ -99,25 +93,19 @@ public class LogisticaTest {
 
         fachadaLogistica = new Fachada();
 
-        DepositoDTO deposito =
-                fachadaLogistica.agregarDeposito(
-                        new DepositoDTO(null, null, "Deposito Test", "Direccion", 100, null)
-                );
+        DepositoDTO deposito = fachadaLogistica.agregarDeposito(new DepositoDTO(null, null, "Deposito Test", "Direccion", 100, null));
 
         fachadaLogistica.setAlgoritmoMM(deposito.id(), TipoAlgoritmoEnum.PRIORIDAD_POR_SCORE);
 
         PaqueteDTO paquete = new PaqueteDTO("1", "donacion1", "arroz", 10);
 
-        NecesidadMaterialDTO necesidad1 =
-                new NecesidadMaterialDTO("n1", "e1", 10, "descripcion", 100, "arroz", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
+        NecesidadMaterialDTO necesidad1 = new NecesidadMaterialDTO("n1", "e1", 10, "descripcion", 100, "arroz", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
 
-        NecesidadMaterialDTO necesidad2 =
-                new NecesidadMaterialDTO("n2", "e2", 5, "descripcion", 20, "arroz", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
+        NecesidadMaterialDTO necesidad2 = new NecesidadMaterialDTO("n2", "e2", 5, "descripcion", 20, "arroz", TipoNecesidadMaterialEnum.EXTRAORDINARIA);
 
         List<NecesidadMaterialDTO> necesidades = List.of(necesidad1, necesidad2);
 
-        AsignacionDTO asignacion =
-                fachadaLogistica.ejecutarMatchmaking(deposito.id(), paquete, necesidades);
+        AsignacionDTO asignacion = fachadaLogistica.ejecutarMatchmaking(deposito.id(), paquete, necesidades);
 
         assertNotNull(asignacion);
         assertEquals("n2", asignacion.necesidadID());
@@ -129,30 +117,11 @@ public class LogisticaTest {
         fachadaLogistica = new Fachada();
         fachadaLogistica.setFachadaDonadoresYEntidades(fachadaDonadoresYEntidades);
 
-        DepositoDTO deposito =
-                fachadaLogistica.agregarDeposito(
-                        new DepositoDTO(null, null, "Deposito", "Direccion", 100, null)
-                );
+        DepositoDTO deposito = fachadaLogistica.agregarDeposito(new DepositoDTO(null, null, "Deposito", "Direccion", 100, null));
 
-        when(fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe("leche"))
-                .thenReturn(
-                        List.of(
-                                new NecesidadMaterialDTO(
-                                        "n1",
-                                        "e1",
-                                        5,
-                                        "descripcion",
-                                        10,
-                                        "leche",
-                                        TipoNecesidadMaterialEnum.RECURRENTE
-                                )
-                        )
-                );
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> fachadaLogistica.gestionarDonacion(deposito.id(), "don1", "leche", 5)
-        );
+        when(fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe("leche")).thenReturn(List.of(
+                new NecesidadMaterialDTO("n1", "e1", 5, "descripcion", 10, "leche", TipoNecesidadMaterialEnum.RECURRENTE)));
+        assertThrows(IllegalArgumentException.class, () -> fachadaLogistica.gestionarDonacion(deposito.id(), "don1", "leche", 5));
     }
 
 
