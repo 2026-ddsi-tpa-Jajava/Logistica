@@ -1,22 +1,32 @@
 package ar.edu.utn.dds.k3003.model;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
+@Entity
 public class Asignacion {
 
-    private String id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
     private String idPaquete;
     private String idEntidad;
     private EstadoAsignacion estado;
 
-    public Asignacion(String id, String idPaquete, String idEntidad){
+    public Asignacion() {
+    }
 
-        this.id = id;
+    public Asignacion(String idPaquete, String idEntidad){
+
         this.idPaquete = idPaquete;
         this.idEntidad = idEntidad;
         this.estado = EstadoAsignacion.ASIGNADA;
 
     }
 
-    public String getId() {
+    public Long getId() {
         return id;
     }
 

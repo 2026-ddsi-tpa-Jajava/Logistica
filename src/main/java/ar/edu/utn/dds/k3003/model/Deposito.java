@@ -1,29 +1,36 @@
 package ar.edu.utn.dds.k3003.model;
 
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
+import jakarta.persistence.*;
 
+@Entity
 public class Deposito {
 
-    private String id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String nombre;
     private String direccion;
     private Integer capacidadMaxima;
     private Integer stockActual;
+
+    @Enumerated(EnumType.STRING)
     private TipoAlgoritmoEnum algoritmoMatchmaking;
 
-    public Deposito(String id, String nombre, String direccion, Integer capacidadMaxima){
+    public Deposito() {
+    }
 
-        this.id = id;
+    public Deposito(String nombre, String direccion, Integer capacidadMaxima) {
         this.nombre = nombre;
         this.direccion = direccion;
         this.capacidadMaxima = capacidadMaxima;
         this.algoritmoMatchmaking = null;
-
     }
 
-    public String getId() {return id;}
 
-    public void setId(String id) {this.id = id;}
+    public Long getId() {return id;}
+
+    public void setId(Long id) {this.id = id;}
 
     public String getNombre() {return nombre;}
 

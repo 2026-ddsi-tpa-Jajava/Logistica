@@ -19,55 +19,27 @@ import ar.edu.utn.dds.k3003.model.Deposito;
 import ar.edu.utn.dds.k3003.repositories.*;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 
+import io.micrometer.core.instrument.Metrics;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class Fachada implements FachadaLogistica {
 
   public Fachada() {
-
-
-    this.depositoRepository = new DepositoRepositoryMemoria();
-    this.asignacionRepository = new AsignacionRepositoryMemoria();
-
-
   }
 
+
+  @Autowired
   private DepositoRepository depositoRepository;
+  @Autowired
   private AsignacionRepository asignacionRepository;
-  private Integer contadorIdDeposito = 0;
-  private Integer contadorIdAsignacion = 0;
-  private Integer contadorIdPaquete = 0;
+
   private FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
   private FachadaDonaciones fachadaDonaciones;
-
-  private String generarIdDeposito(){
-
-    contadorIdDeposito++;
-
-    return String.valueOf(contadorIdDeposito);
-  }
-
-  private String generarIdAsignacion(){
-
-    contadorIdAsignacion++;
-
-    return String.valueOf(contadorIdAsignacion);
-  }
-
-  private String generarIdPaquete(){
-
-    contadorIdPaquete++;
-
-    return String.valueOf(contadorIdPaquete);
-  }
-
 
 
   private double calcularScore(NecesidadMaterialDTO necesidad) {
@@ -76,10 +48,9 @@ public class Fachada implements FachadaLogistica {
 
   }
 
-
   public List<DepositoDTO> obtenerDepositos() {
     return depositoRepository.findAll().stream().map(deposito -> new DepositoDTO(
-                    deposito.getId(),
+                    deposito.getId().toString(),
                     deposito.getAlgoritmoMatchmaking(),
                     deposito.getNombre(),
                     deposito.getDireccion(),
@@ -96,41 +67,41 @@ public class Fachada implements FachadaLogistica {
       throw new RuntimeException();
     }
 
-    if (depositoDTO.id() != null && depositoRepository.findById(depositoDTO.id()).isPresent()) {
+    if (depositoDTO.id() != null && depositoRepository.findById(Long.parseLong(depositoDTO.id())).isPresent()) {
       throw new RuntimeException();
     }
 
+    Deposito deposito = new Deposito(depositoDTO.nombre(), depositoDTO.direccion(), depositoDTO.capacidadMaxima());
 
-    String id = generarIdDeposito();
+    Deposito guardado = depositoRepository.save(deposito);
 
-    Deposito deposito = new Deposito(id, depositoDTO.nombre(), depositoDTO.direccion(), depositoDTO.capacidadMaxima());
+    // Metrica de deposito creado
+    Metrics.counter("logistica.depositos.creados").increment();
 
-    depositoRepository.save(deposito);
-
-    return new DepositoDTO(deposito.getId(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+    return new DepositoDTO(guardado.getId().toString(), guardado.getAlgoritmoMatchmaking(), guardado.getNombre(), guardado.getDireccion(), guardado.getCapacidadMaxima(), List.of());
 
   }
 
   @Override
   public DepositoDTO buscarDepositoPorID(String depositoID) throws NoSuchElementException {
 
-    Deposito deposito = depositoRepository.findById(depositoID).orElseThrow(NoSuchElementException :: new);
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException :: new);
 
-    return new DepositoDTO(deposito.getId(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+    return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
   }
 
   @Override
   public AsignacionDTO buscarAsignacionPorPaqueteID(String paqueteID) throws NoSuchElementException {
 
-    Asignacion asignacion = asignacionRepository.findByPaqueteId(paqueteID).orElseThrow(NoSuchElementException :: new);
+    Asignacion asignacion = asignacionRepository.findByIdPaquete(paqueteID).orElseThrow(NoSuchElementException :: new);
 
-    return new AsignacionDTO(asignacion.getId(), asignacion.getIdPaquete(), asignacion.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.valueOf(asignacion.getEstado().name()));
+    return new AsignacionDTO(asignacion.getId().toString(), asignacion.getIdPaquete(), asignacion.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.valueOf(asignacion.getEstado().name()));
   }
 
   @Override
   public DepositoDTO gestionarDonacion(String depositoID, String donacionID, String productoID, Integer cantidad) throws NoSuchElementException {
 
-    Deposito deposito = depositoRepository.findById(depositoID).orElseThrow(NoSuchElementException::new);
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException::new);
 
     if(cantidad <= 0){
       throw new IllegalArgumentException("Cantidad de producto invalida");
@@ -140,7 +111,7 @@ public class Fachada implements FachadaLogistica {
     List<NecesidadMaterialDTO> necesidades = fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe(productoID);
 
     if(necesidades.isEmpty()){
-      return new DepositoDTO(deposito.getId(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+      return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
     }
 
 
@@ -152,22 +123,26 @@ public class Fachada implements FachadaLogistica {
       }
     }
 
-    String idPaquete = generarIdPaquete();
+    String idPaquete = UUID.randomUUID().toString();
 
     PaqueteDTO paqueteDTO = new PaqueteDTO(idPaquete, donacionID, productoID, cantidad);
 
     AsignacionDTO asignacion = ejecutarMatchmaking(depositoID, paqueteDTO, necesidades);
 
-    return new DepositoDTO(deposito.getId(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(),deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+    // Metrica de donacion procesada
+    Metrics.counter("logistica.donaciones.procesadas").increment();
+
+    return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(),deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
 
   }
 
   @Override
   public void setAlgoritmoMM(String depositoID, TipoAlgoritmoEnum algoritmo) {
-    Deposito deposito = depositoRepository.findById(depositoID)
-            .orElseThrow(NoSuchElementException::new);
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException::new);
 
     deposito.setAlgoritmoMatchmaking(algoritmo);
+
+    depositoRepository.save(deposito);
   }
 
   @Override
@@ -177,7 +152,7 @@ public class Fachada implements FachadaLogistica {
       throw new RuntimeException();
     }
 
-    Deposito deposito = depositoRepository.findById(depositoID).orElseThrow(NoSuchElementException::new);
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException::new);
 
     TipoAlgoritmoEnum algoritmo = deposito.getAlgoritmoMatchmaking();
 
@@ -203,23 +178,20 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-
-    String idAsignacion = generarIdAsignacion();
-
-
     String idNecesidad = necesidadSeleccionada.id();
 
     if (idNecesidad == null) {
       idNecesidad = "necesidad1";
     }
 
-    Asignacion asignacion = new Asignacion(idAsignacion, paqueteDTO.id(), idNecesidad);
+    Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad);
 
-    //Asignacion asignacion = new Asignacion(idAsignacion, paqueteDTO.id(), necesidadSeleccionada.id());
+    Asignacion guardada = asignacionRepository.save(asignacion);
 
-    asignacionRepository.save(asignacion);
+    // Metrica de asignacion creada
+    Metrics.counter("logistica.asignaciones.generadas").increment();
 
-    return new AsignacionDTO(asignacion.getId(), asignacion.getIdPaquete(), asignacion.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.valueOf(asignacion.getEstado().name()));
+    return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.valueOf(guardada.getEstado().name()));
 
   }
 
@@ -232,7 +204,7 @@ public class Fachada implements FachadaLogistica {
       throw new RuntimeException();
     }
 
-    Asignacion asignacion = asignacionRepository.findByPaqueteId(paqueteDTO.id()).orElseThrow(NoSuchElementException::new);
+    Asignacion asignacion = asignacionRepository.findByIdPaquete(paqueteDTO.id()).orElseThrow(NoSuchElementException::new);
 
     fachadaDonadoresYEntidades.satisfacerNecesidad(asignacion.getIdEntidad(), paqueteDTO.cantidad());
 
