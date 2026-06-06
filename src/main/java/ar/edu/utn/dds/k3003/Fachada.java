@@ -12,6 +12,8 @@ import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaDonadoresYEntidades;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaIncentivos;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
+import ar.edu.utn.dds.k3003.clients.DonacionesClient;
+import ar.edu.utn.dds.k3003.clients.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.exceptions.DonadorNoEncontradoException;
 import ar.edu.utn.dds.k3003.exceptions.DonadorYaExistenteException;
 import ar.edu.utn.dds.k3003.model.Asignacion;
@@ -28,6 +30,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class Fachada implements FachadaLogistica {
+
+
+    @Autowired
+    private DonacionesClient donacionesClient;
+    @Autowired
+    private DonadoresYEntidadesClient donadoresYEntidadesClient;
 
   public Fachada() {
   }
@@ -108,7 +116,7 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-    List<NecesidadMaterialDTO> necesidades = fachadaDonadoresYEntidades.obtenerNecesidadesInsatisfechasDe(productoID);
+    List<NecesidadMaterialDTO> necesidades = donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
 
     if(necesidades.isEmpty()){
       return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
@@ -206,9 +214,9 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion asignacion = asignacionRepository.findByIdPaquete(paqueteDTO.id()).orElseThrow(NoSuchElementException::new);
 
-    fachadaDonadoresYEntidades.satisfacerNecesidad(asignacion.getIdEntidad(), paqueteDTO.cantidad());
+    donadoresYEntidadesClient.satisfacerNecesidad(asignacion.getIdEntidad(), paqueteDTO.cantidad());
 
-    fachadaDonaciones.cambiarEstadoDeDonacion(paqueteDTO.donacionID(), EstadoDonacionEnum.ACEPTADA);
+    donacionesClient.cambiarEstadoDeDonacion(paqueteDTO.donacionID(), EstadoDonacionEnum.ACEPTADA);
 
     asignacion.completarEntrega();
   }
