@@ -14,7 +14,7 @@
 
 🧩 Link al despliegue en Render
 -
-- https://entrega-2-cristianivanperna.onrender.com
+- https://logistica-hjaw.onrender.com
 
 ---
 
