@@ -138,7 +138,7 @@ public class Fachada implements FachadaLogistica {
     AsignacionDTO asignacion = ejecutarMatchmaking(depositoID, paqueteDTO, necesidades);
 
     // Metrica de donacion procesada
-    Metrics.counter("logistica.donaciones.procesadas").increment();
+    Metrics.counter("logistica.donaciones.gestionadas").increment();
 
     return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(),deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
 
@@ -219,6 +219,8 @@ public class Fachada implements FachadaLogistica {
     donacionesClient.cambiarEstadoDeDonacion(paqueteDTO.donacionID(), EstadoDonacionEnum.ACEPTADA);
 
     asignacion.completarEntrega();
+
+    Metrics.counter("logistica.entregas.reportadas").increment();
   }
 
 
