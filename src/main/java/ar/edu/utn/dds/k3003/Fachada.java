@@ -189,8 +189,9 @@ public class Fachada implements FachadaLogistica {
     String idNecesidad = necesidadSeleccionada.id();
 
     if (idNecesidad == null) {
-      idNecesidad = "necesidad1";
+      throw new IllegalStateException("La necesidad seleccionada no tiene ID válido");
     }
+
 
     Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad);
 
