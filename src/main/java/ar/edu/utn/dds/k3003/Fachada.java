@@ -240,6 +240,13 @@ public class Fachada implements FachadaLogistica {
 
   }
 
+  public void eliminarTodosLosDepositos() {
+    depositoRepository.deleteAll();
+  }
+
+  public void eliminarTodasLasAsignaciones() {
+    asignacionRepository.deleteAll();
+  }
 
 
 }

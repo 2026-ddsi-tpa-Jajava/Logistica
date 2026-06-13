@@ -94,4 +94,10 @@ public class DepositoController {
             return ResponseEntity.internalServerError().body("Error interno al gestionar la donación");
         }
     }
+
+    @DeleteMapping
+    public ResponseEntity<Void> eliminarTodosLosDepositos() {
+        fachada.eliminarTodosLosDepositos();
+        return ResponseEntity.noContent().build();
+    }
 }

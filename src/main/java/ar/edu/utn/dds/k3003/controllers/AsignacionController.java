@@ -33,4 +33,10 @@ public class AsignacionController {
             return ResponseEntity.internalServerError().body("Error interno al buscar la asignación");
         }
     }
+
+    @DeleteMapping
+    public ResponseEntity<Void> eliminarTodasLasAsignaciones() {
+        fachada.eliminarTodasLasAsignaciones();
+        return ResponseEntity.noContent().build();
+    }
 }
