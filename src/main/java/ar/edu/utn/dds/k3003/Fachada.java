@@ -117,6 +117,7 @@ public class Fachada implements FachadaLogistica {
 
 
     List<NecesidadMaterialDTO> necesidades = donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
+    System.out.println("Necesidades encontradas: " + necesidades.size());
 
     if(necesidades.isEmpty()){
       return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
@@ -195,7 +196,9 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad);
 
+    System.out.println("Antes del save");
     Asignacion guardada = asignacionRepository.save(asignacion);
+    System.out.println("Asignacion guardada: " + guardada.getId());
 
     // Metrica de asignacion creada
     Metrics.counter("logistica.asignaciones.generadas").increment();
