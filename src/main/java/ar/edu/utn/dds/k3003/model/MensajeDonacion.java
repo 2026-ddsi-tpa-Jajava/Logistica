@@ -1,6 +1,8 @@
 package ar.edu.utn.dds.k3003.model;
 
-public class MensajeDonacion {
+import java.io.Serializable;
+
+public class MensajeDonacion implements Serializable {
 
     private String depositoID;
     private String donacionID;
