@@ -15,7 +15,15 @@ public class Paquete {
     private String producto;
     private Integer cantidad;
 
-    public Paquete() {
+    public Paquete(){
+
+    }
+
+    public Paquete(String donacionID, String producto, Integer cantidad) {
+
+        this.donacionID = donacionID;
+        this.producto = producto;
+        this.cantidad = cantidad;
     }
 
     public Long getId(){return id;}

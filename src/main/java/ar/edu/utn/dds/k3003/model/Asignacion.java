@@ -1,9 +1,6 @@
 package ar.edu.utn.dds.k3003.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class Asignacion {
@@ -13,15 +10,19 @@ public class Asignacion {
     private Long id;
     private String idPaquete;
     private String idEntidad;
+    private Integer cantidadAsignada;
+    @Enumerated(EnumType.STRING)
     private EstadoAsignacion estado;
+
 
     public Asignacion() {
     }
 
-    public Asignacion(String idPaquete, String idEntidad){
+    public Asignacion(String idPaquete, String idEntidad, Integer cantidadAsignada){
 
         this.idPaquete = idPaquete;
         this.idEntidad = idEntidad;
+        this.cantidadAsignada = cantidadAsignada;
         this.estado = EstadoAsignacion.ASIGNADA;
 
     }
@@ -37,6 +38,8 @@ public class Asignacion {
     public String getIdEntidad() {
         return idEntidad;
     }
+
+    public Integer getCantidadAsignada() {return cantidadAsignada;}
 
     public EstadoAsignacion getEstado() {
         return estado;

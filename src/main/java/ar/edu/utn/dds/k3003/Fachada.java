@@ -18,6 +18,7 @@ import ar.edu.utn.dds.k3003.exceptions.DonadorNoEncontradoException;
 import ar.edu.utn.dds.k3003.exceptions.DonadorYaExistenteException;
 import ar.edu.utn.dds.k3003.model.Asignacion;
 import ar.edu.utn.dds.k3003.model.Deposito;
+import ar.edu.utn.dds.k3003.model.Paquete;
 import ar.edu.utn.dds.k3003.repositories.*;
 
 import java.time.LocalDateTime;
@@ -47,12 +48,27 @@ public class Fachada implements FachadaLogistica {
   private AsignacionRepository asignacionRepository;
 
   private FachadaDonadoresYEntidades fachadaDonadoresYEntidades;
+
   private FachadaDonaciones fachadaDonaciones;
 
 
   private double calcularScore(NecesidadMaterialDTO necesidad) {
 
     return necesidad.nivelDeUrgencia() / (double) necesidad.cantidadObjetivo();
+
+  }
+
+  private List<PaqueteDTO> obtenerStockDTO(Deposito deposito) {
+
+    List<PaqueteDTO> paquetesDTO = new ArrayList<>();
+
+    for (Paquete paquete : deposito.getStockActual()) {
+
+      paquetesDTO.add(new PaqueteDTO(paquete.getId().toString(), paquete.getDonacionID(), paquete.getProducto(), paquete.getCantidad()));
+
+    }
+
+    return paquetesDTO;
 
   }
 
@@ -63,9 +79,10 @@ public class Fachada implements FachadaLogistica {
                     deposito.getNombre(),
                     deposito.getDireccion(),
                     deposito.getCapacidadMaxima(),
-                    List.of()
+                    obtenerStockDTO(deposito)
             )).toList();
   }
+
 
 
   @Override
@@ -86,7 +103,7 @@ public class Fachada implements FachadaLogistica {
     // Metrica de deposito creado
     Metrics.counter("logistica.depositos.creados").increment();
 
-    return new DepositoDTO(guardado.getId().toString(), guardado.getAlgoritmoMatchmaking(), guardado.getNombre(), guardado.getDireccion(), guardado.getCapacidadMaxima(), List.of());
+    return new DepositoDTO(guardado.getId().toString(), guardado.getAlgoritmoMatchmaking(), guardado.getNombre(), guardado.getDireccion(), guardado.getCapacidadMaxima(), obtenerStockDTO(deposito));
 
   }
 
@@ -95,7 +112,7 @@ public class Fachada implements FachadaLogistica {
 
     Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException :: new);
 
-    return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+    return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), obtenerStockDTO(deposito));
   }
 
   @Override
@@ -115,33 +132,71 @@ public class Fachada implements FachadaLogistica {
       throw new IllegalArgumentException("Cantidad de producto invalida");
     }
 
+    if(!deposito.tieneLugar(cantidad)) {
+
+      throw new IllegalArgumentException("No hay espacio suficiente en el depósito");
+
+    }
 
     List<NecesidadMaterialDTO> necesidades = donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
     System.out.println("Necesidades encontradas: " + necesidades.size());
 
     if(necesidades.isEmpty()){
-      return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+
+      Paquete paquete = new Paquete(donacionID, productoID, cantidad);
+
+      deposito.agregarPaqueteAlStock(paquete);
+
+      depositoRepository.save(deposito);
+
+      return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), obtenerStockDTO(deposito));
+
     }
 
 
+    List<NecesidadMaterialDTO> necesidadesValidas = new ArrayList<>();
+
+    // Voy a considerar que las necesidades son validas si son extraordinarias o si la donacion alcanza para cubrir la necesidad
+
     for (NecesidadMaterialDTO necesidad : necesidades) {
-        if (necesidad.tipo() == TipoNecesidadMaterialEnum.RECURRENTE && cantidad < necesidad.cantidadObjetivo()) {
-            throw new IllegalArgumentException(
-                "No se permiten donaciones parciales para necesidades recurrentes"
-        );
+
+      if (necesidad.tipo() == TipoNecesidadMaterialEnum.EXTRAORDINARIA) {
+
+        necesidadesValidas.add(necesidad);
+
       }
+
+      else if (necesidad.tipo() == TipoNecesidadMaterialEnum.RECURRENTE && cantidad >= necesidad.cantidadObjetivo()) {
+
+        necesidadesValidas.add(necesidad);
+
+      }
+
+    }
+
+    if(necesidadesValidas.isEmpty()){
+
+      Paquete paquete = new Paquete(donacionID, productoID, cantidad);
+
+      deposito.agregarPaqueteAlStock(paquete);
+
+      depositoRepository.save(deposito);
+
+      return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), obtenerStockDTO(deposito));
     }
 
     String idPaquete = UUID.randomUUID().toString();
 
+
     PaqueteDTO paqueteDTO = new PaqueteDTO(idPaquete, donacionID, productoID, cantidad);
 
-    AsignacionDTO asignacion = ejecutarMatchmaking(depositoID, paqueteDTO, necesidades);
+
+    AsignacionDTO asignacion = ejecutarMatchmaking(depositoID, paqueteDTO, necesidadesValidas);
 
     // Metrica de donacion procesada
     Metrics.counter("logistica.donaciones.gestionadas").increment();
 
-    return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(),deposito.getDireccion(), deposito.getCapacidadMaxima(), List.of());
+    return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(),deposito.getDireccion(), deposito.getCapacidadMaxima(), obtenerStockDTO(deposito));
 
   }
 
@@ -168,11 +223,9 @@ public class Fachada implements FachadaLogistica {
     // La lista no está vacía (ya validado en gestionarDonacion)
     NecesidadMaterialDTO necesidadSeleccionada =  necesidades.stream().max(Comparator.comparing(NecesidadMaterialDTO::cantidadObjetivo)).orElseThrow();
 
-
     if (algoritmo == null || algoritmo == TipoAlgoritmoEnum.SUB_ATENDIDOS) {
 
       necesidadSeleccionada = necesidades.stream().max(Comparator.comparing(NecesidadMaterialDTO::cantidadObjetivo)).orElseThrow();
-
 
 
     } else if (algoritmo == TipoAlgoritmoEnum.PRIORIDAD_POR_SCORE) {
@@ -186,15 +239,29 @@ public class Fachada implements FachadaLogistica {
 
     }
 
-
     String idNecesidad = necesidadSeleccionada.id();
+
+    // Me fijo lo que va a sobrar para despues guardarlo en el stock
+    Integer cantidadAsignada = Math.min(paqueteDTO.cantidad(), necesidadSeleccionada.cantidadObjetivo());
+
+    Integer sobrante = paqueteDTO.cantidad() - cantidadAsignada;
+
 
     if (idNecesidad == null) {
       throw new IllegalStateException("La necesidad seleccionada no tiene ID válido");
     }
 
 
-    Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad);
+    Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad, cantidadAsignada);
+
+    if (sobrante > 0) {
+
+      Paquete paqueteSobrante = new Paquete(paqueteDTO.donacionID(), paqueteDTO.producto(), sobrante);
+
+      deposito.agregarPaqueteAlStock(paqueteSobrante);
+
+      depositoRepository.save(deposito);
+    }
 
     System.out.println("Antes del save");
     Asignacion guardada = asignacionRepository.save(asignacion);
@@ -218,7 +285,7 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion asignacion = asignacionRepository.findByIdPaquete(paqueteDTO.id()).orElseThrow(NoSuchElementException::new);
 
-    donadoresYEntidadesClient.satisfacerNecesidad(asignacion.getIdEntidad(), paqueteDTO.cantidad());
+    donadoresYEntidadesClient.satisfacerNecesidad(asignacion.getIdEntidad(), asignacion.getCantidadAsignada());
 
     donacionesClient.cambiarEstadoDeDonacion(paqueteDTO.donacionID(), EstadoDonacionEnum.ACEPTADA);
 

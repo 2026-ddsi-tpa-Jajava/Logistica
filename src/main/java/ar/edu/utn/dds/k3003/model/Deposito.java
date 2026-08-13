@@ -1,7 +1,11 @@
 package ar.edu.utn.dds.k3003.model;
 
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import jakarta.persistence.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class Deposito {
@@ -12,7 +16,9 @@ public class Deposito {
     private String nombre;
     private String direccion;
     private Integer capacidadMaxima;
-    private Integer stockActual;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<Paquete> stockActual;
 
     @Enumerated(EnumType.STRING)
     private TipoAlgoritmoEnum algoritmoMatchmaking;
@@ -25,6 +31,7 @@ public class Deposito {
         this.direccion = direccion;
         this.capacidadMaxima = capacidadMaxima;
         this.algoritmoMatchmaking = null;
+        this.stockActual = new ArrayList<>();
     }
 
 
@@ -44,9 +51,9 @@ public class Deposito {
 
     public void setCapacidadMaxima(Integer capacidadMaxima) {this.capacidadMaxima = capacidadMaxima;}
 
-    public Integer getStockActual() {return stockActual;}
+    public List<Paquete> getStockActual() {return stockActual;}
 
-    public void setStockActual(Integer stockActual) {this.stockActual = stockActual;}
+    public void setStockActual(List<Paquete> stockActual) {this.stockActual = stockActual;}
 
     public TipoAlgoritmoEnum getAlgoritmoMatchmaking() {return algoritmoMatchmaking;}
 
@@ -60,8 +67,21 @@ public class Deposito {
         this.capacidadMaxima = capacidadMaxima;
     }
 
+    // agregar paquete al stock
+    public void agregarPaqueteAlStock(Paquete paquete){
+        this.stockActual.add(paquete);
 
+    }
 
+    public Integer ocupacionActual() {
+
+        return stockActual.stream().mapToInt(Paquete::getCantidad).sum();}
+
+    public boolean tieneLugar(Integer cantidadEntrante){
+
+        return ocupacionActual() + cantidadEntrante <= capacidadMaxima;
+
+    }
 
 }
 
