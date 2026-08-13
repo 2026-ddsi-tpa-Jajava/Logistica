@@ -16,9 +16,7 @@ import ar.edu.utn.dds.k3003.clients.DonacionesClient;
 import ar.edu.utn.dds.k3003.clients.DonadoresYEntidadesClient;
 import ar.edu.utn.dds.k3003.exceptions.DonadorNoEncontradoException;
 import ar.edu.utn.dds.k3003.exceptions.DonadorYaExistenteException;
-import ar.edu.utn.dds.k3003.model.Asignacion;
-import ar.edu.utn.dds.k3003.model.Deposito;
-import ar.edu.utn.dds.k3003.model.Paquete;
+import ar.edu.utn.dds.k3003.model.*;
 import ar.edu.utn.dds.k3003.repositories.*;
 
 import java.time.LocalDateTime;
@@ -37,6 +35,9 @@ public class Fachada implements FachadaLogistica {
     private DonacionesClient donacionesClient;
     @Autowired
     private DonadoresYEntidadesClient donadoresYEntidadesClient;
+
+    @Autowired
+    private PublisherDonacion publisherDonacion;
 
   public Fachada() {
   }
@@ -189,6 +190,8 @@ public class Fachada implements FachadaLogistica {
 
 
     PaqueteDTO paqueteDTO = new PaqueteDTO(idPaquete, donacionID, productoID, cantidad);
+
+    publisherDonacion.publicar(new MensajeDonacion(depositoID, donacionID, productoID, cantidad));
 
 
     AsignacionDTO asignacion = ejecutarMatchmaking(depositoID, paqueteDTO, necesidadesValidas);
