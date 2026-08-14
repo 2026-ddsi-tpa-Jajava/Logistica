@@ -14,6 +14,8 @@ public class WorkerDonacion {
     @RabbitListener(queues = "donaciones.queue")
     public void procesar(MensajeDonacion mensaje){
 
+        System.out.println("WORKER RENDER -> Procesando " + mensaje.getDonacionID());
+
         fachada.procesarDonacionWorker(mensaje.getDepositoID(), mensaje.getDonacionID(), mensaje.getProductoID(), mensaje.getCantidad());
 
     }
