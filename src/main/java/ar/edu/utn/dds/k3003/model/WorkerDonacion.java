@@ -7,9 +7,11 @@ import org.springframework.stereotype.Component;
 public class WorkerDonacion {
 
     @RabbitListener(queues = "donaciones.queue")
-    public void procesar(MensajeDonacion mensaje){
+    public void procesar(Object mensaje){
 
-        System.out.println("Donacion recibida con ID " + mensaje.getDonacionID());
+        System.out.println("Clase recibida: " + mensaje.getClass());
+
+        System.out.println(mensaje);
 
     }
 
