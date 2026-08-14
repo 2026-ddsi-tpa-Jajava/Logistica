@@ -19,6 +19,24 @@ public class AsignacionController {
         this.fachada = fachada;
     }
 
+    // GET todas las asignaciones
+    @GetMapping
+    public ResponseEntity<?> obtenerAsignaciones() {
+
+        try {
+
+            return ResponseEntity.ok(
+                    fachada.obtenerAsignaciones()
+            );
+
+        } catch (Exception e) {
+
+            return ResponseEntity.internalServerError()
+                    .body(e.getMessage());
+        }
+    }
+
+
     // GET asignacion de un paquete
     @GetMapping("/{idPaquete}")
     public ResponseEntity<?> buscarAsignacionPorPaquete(@PathVariable String idPaquete) {

@@ -88,6 +88,20 @@ public class Fachada implements FachadaLogistica {
     )).toList();
   }
 
+  public List<AsignacionDTO> obtenerAsignaciones() {
+
+    return asignacionRepository.findAll()
+            .stream()
+            .map(a -> new AsignacionDTO(
+                    a.getId().toString(),
+                    a.getIdPaquete(),
+                    a.getIdEntidad(),
+                    LocalDateTime.now(),
+                    EstadoAsginacionEnum.valueOf(
+                            a.getEstado().name())
+            )).toList();
+  }
+
   public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
 
     DepositoDTO deposito = logisticaClient.obtenerDeposito(depositoID);
