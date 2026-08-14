@@ -113,6 +113,7 @@ public class DepositoController {
         }
     }
 
+    // esto lo usa el worker
     @PostMapping("/stock")
     public ResponseEntity<?> agregarStock(@RequestBody Map<String,Object> body) {
 
@@ -120,6 +121,16 @@ public class DepositoController {
 
         return ResponseEntity.ok().build();
     }
+
+    // GET cantidad de stock de determinado producto
+    @GetMapping("/stock/{productoID}")
+    public ResponseEntity<?> obtenerCantidadStockPorProducto(@PathVariable String productoID) {
+
+        Integer cantidad = fachada.obtenerCantidadStockPorProducto(productoID);
+
+        return ResponseEntity.ok(cantidad);
+    }
+
 
     @DeleteMapping
     public ResponseEntity<Void> eliminarTodosLosDepositos() {

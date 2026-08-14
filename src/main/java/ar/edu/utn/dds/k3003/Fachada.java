@@ -133,6 +133,12 @@ public class Fachada implements FachadaLogistica {
             )).toList();
   }
 
+  public Integer obtenerCantidadStockPorProducto(String productoID) {
+
+    return depositoRepository.findAll().stream().flatMap(d -> d.getStockActual().stream()).filter(p -> p.getProducto().equals(productoID)).mapToInt(Paquete::getCantidad).sum();
+
+  }
+
   // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
 
   public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
