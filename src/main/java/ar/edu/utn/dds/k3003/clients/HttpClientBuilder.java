@@ -67,4 +67,11 @@ public class HttpClientBuilder {
                 .uri(URI.create(url))
                 .header("Accept", "application/json");
     }
+
+    public static <G> void postWithoutResponse(String url, G body) throws Exception {
+
+        HttpRequest request = prepareRequest(url, body, "POST");
+
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
 }

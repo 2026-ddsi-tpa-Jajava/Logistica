@@ -24,19 +24,19 @@ public class LogisticaClient {
 
         try {
 
-            HttpClientBuilder.post("https://logistica-hjaw.onrender.com" + "/asignaciones", body, String.class);
+            HttpClientBuilder.postWithoutResponse("https://logistica-hjaw.onrender.com/asignaciones", body);
 
         } catch (Exception e) {
 
             throw new RuntimeException(e);
-            }
+        }
     }
 
     public void agregarStock(Map<String,Object> body) {
 
         try {
 
-            HttpClientBuilder.post("https://logistica-hjaw.onrender.com" + "/stock", body, Void.class);
+            HttpClientBuilder.postWithoutResponse("https://logistica-hjaw.onrender.com" + "/stock", body);
 
         } catch (Exception e) {
 
