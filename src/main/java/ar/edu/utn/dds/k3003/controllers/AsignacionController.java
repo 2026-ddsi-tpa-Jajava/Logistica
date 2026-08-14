@@ -2,6 +2,7 @@ package ar.edu.utn.dds.k3003.controllers;
 
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
+import ar.edu.utn.dds.k3003.model.EstadoAsignacion;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,12 @@ public class AsignacionController {
         }
     }
 
+    //GET Asignacion por estado
+    @GetMapping("/estado/{estado}")
+    public ResponseEntity<?> obtenerPorEstado(@PathVariable String estado) {
+
+        return ResponseEntity.ok(fachada.obtenerAsignacionesPorEstado(EstadoAsignacion.valueOf(estado)));
+    }
 
     // GET asignacion de un paquete
     @GetMapping("/{idPaquete}")

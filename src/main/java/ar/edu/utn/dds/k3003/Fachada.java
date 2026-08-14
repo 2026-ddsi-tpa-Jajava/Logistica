@@ -32,6 +32,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class Fachada implements FachadaLogistica {
 
+  public Fachada() {
+  }
+
+  // ------------------------------------------INYECCION DE CLIENTS-----------------------------------------------------
 
   @Autowired
   private DonacionesClient donacionesClient;
@@ -43,10 +47,6 @@ public class Fachada implements FachadaLogistica {
   @Autowired
   private PublisherDonacion publisherDonacion;
 
-  public Fachada() {
-  }
-
-
   @Autowired
   private DepositoRepository depositoRepository;
   @Autowired
@@ -56,6 +56,7 @@ public class Fachada implements FachadaLogistica {
 
   private FachadaDonaciones fachadaDonaciones;
 
+  // ----------------------------FUNCIONES UTILIZADAS EN LOS METODOS DE CONTRATO---------------------------------------
 
   private double calcularScore(NecesidadMaterialDTO necesidad) {
 
@@ -76,6 +77,8 @@ public class Fachada implements FachadaLogistica {
     return paquetesDTO;
 
   }
+
+  // ---------------------------------------------ENDPOINTS ADICIONALES-------------------------------------------------
 
   public List<DepositoDTO> obtenerDepositos() {
     return depositoRepository.findAll().stream().map(deposito -> new DepositoDTO(
@@ -101,6 +104,36 @@ public class Fachada implements FachadaLogistica {
                             a.getEstado().name())
             )).toList();
   }
+
+  public List<PaqueteDTO> obtenerStock(String depositoID) {
+
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException::new);
+
+    return obtenerStockDTO(deposito);
+  }
+
+  public void vaciarStock(String depositoID) {
+
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow(NoSuchElementException::new);
+
+    deposito.getStockActual().clear();
+
+    depositoRepository.save(deposito);
+  }
+
+  public List<AsignacionDTO> obtenerAsignacionesPorEstado(EstadoAsignacion estado) {
+
+    return asignacionRepository.findByEstado(estado).stream().map(a -> new AsignacionDTO(
+                    a.getId().toString(),
+                    a.getIdPaquete(),
+                    a.getIdEntidad(),
+                    LocalDateTime.now(),
+                    EstadoAsginacionEnum.valueOf(
+                            a.getEstado().name())
+            )).toList();
+  }
+
+  // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
 
   public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
 
@@ -194,6 +227,8 @@ public class Fachada implements FachadaLogistica {
 
   }
 
+  // ----------------------------REQUESTS QUE HACE EL WORKER------------------------------------------------------------
+
   public void agregarStock(Map<String,Object> body) {
 
     String depositoID = (String) body.get("depositoID");
@@ -249,6 +284,7 @@ public class Fachada implements FachadaLogistica {
     return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.ASIGNADA);
   }
 
+  //---------------------------------METODOS DEL CONTRATO DE FACHADALOGISTICA-------------------------------------------
 
   @Override
   public DepositoDTO agregarDeposito(DepositoDTO depositoDTO) {
@@ -386,8 +422,6 @@ public class Fachada implements FachadaLogistica {
 
   }
 
-
-
   @Override
   public void reportarEntrega(PaqueteDTO paqueteDTO) {
 
@@ -431,7 +465,6 @@ public class Fachada implements FachadaLogistica {
   public void eliminarTodasLasAsignaciones() {
     asignacionRepository.deleteAll();
   }
-
 
 }
 

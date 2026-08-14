@@ -70,6 +70,23 @@ public class DepositoController {
         }
     }
 
+    @GetMapping("/{id}/stock")
+    public ResponseEntity<?> obtenerStock(@PathVariable String id) {
+
+        try {
+
+            return ResponseEntity.ok(fachada.obtenerStock(id));
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception e) {
+
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     // POST gestionar donacion
     @PostMapping("/{id}/donacion")
     public ResponseEntity<?> gestionarDonacion(@PathVariable String id, @RequestBody PaqueteDTO paquete) {
@@ -109,4 +126,25 @@ public class DepositoController {
         fachada.eliminarTodosLosDepositos();
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/{id}/stock")
+    public ResponseEntity<?> vaciarStock(@PathVariable String id) {
+
+        try {
+
+            fachada.vaciarStock(id);
+
+            return ResponseEntity.noContent().build();
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception e) {
+
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+
 }
