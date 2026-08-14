@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -93,6 +94,14 @@ public class DepositoController {
             log.error("Error interno al gestionar la donación. depositoId={}, paquete={}", id, paquete, e);
             return ResponseEntity.internalServerError().body("Error interno al gestionar la donación");
         }
+    }
+
+    @PostMapping("/stock")
+    public ResponseEntity<?> agregarStock(@RequestBody Map<String,Object> body) {
+
+        fachada.agregarStock(body);
+
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping

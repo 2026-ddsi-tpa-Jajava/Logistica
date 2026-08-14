@@ -14,6 +14,8 @@ import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaIncentivos;
 import ar.edu.utn.dds.k3003.catedra.fachadas.FachadaLogistica;
 import ar.edu.utn.dds.k3003.clients.DonacionesClient;
 import ar.edu.utn.dds.k3003.clients.DonadoresYEntidadesClient;
+import ar.edu.utn.dds.k3003.clients.HttpClientBuilder;
+import ar.edu.utn.dds.k3003.clients.LogisticaClient;
 import ar.edu.utn.dds.k3003.exceptions.DonadorNoEncontradoException;
 import ar.edu.utn.dds.k3003.exceptions.DonadorYaExistenteException;
 import ar.edu.utn.dds.k3003.model.*;
@@ -31,13 +33,15 @@ import org.springframework.stereotype.Component;
 public class Fachada implements FachadaLogistica {
 
 
-    @Autowired
-    private DonacionesClient donacionesClient;
-    @Autowired
-    private DonadoresYEntidadesClient donadoresYEntidadesClient;
+  @Autowired
+  private DonacionesClient donacionesClient;
+  @Autowired
+  private DonadoresYEntidadesClient donadoresYEntidadesClient;
+  @Autowired
+  private LogisticaClient logisticaClient;
 
-    @Autowired
-    private PublisherDonacion publisherDonacion;
+  @Autowired
+  private PublisherDonacion publisherDonacion;
 
   public Fachada() {
   }
@@ -75,15 +79,161 @@ public class Fachada implements FachadaLogistica {
 
   public List<DepositoDTO> obtenerDepositos() {
     return depositoRepository.findAll().stream().map(deposito -> new DepositoDTO(
-                    deposito.getId().toString(),
-                    deposito.getAlgoritmoMatchmaking(),
-                    deposito.getNombre(),
-                    deposito.getDireccion(),
-                    deposito.getCapacidadMaxima(),
-                    obtenerStockDTO(deposito)
-            )).toList();
+            deposito.getId().toString(),
+            deposito.getAlgoritmoMatchmaking(),
+            deposito.getNombre(),
+            deposito.getDireccion(),
+            deposito.getCapacidadMaxima(),
+            obtenerStockDTO(deposito)
+    )).toList();
   }
 
+  public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
+
+    DepositoDTO deposito = logisticaClient.obtenerDeposito(depositoID);
+
+    List<NecesidadMaterialDTO> necesidades = donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
+
+    System.out.println("Necesidades encontradas: " + necesidades.size());
+
+    if (necesidades.isEmpty()) {
+
+      Map<String,Object> body = Map.of(
+              "depositoID", depositoID,
+              "donacionID", donacionID,
+              "productoID", productoID,
+              "cantidad", cantidad
+      );
+
+      logisticaClient.agregarStock(body);
+
+      return;
+    }
+
+    List<NecesidadMaterialDTO> necesidadesValidas = new ArrayList<>();
+
+    for (NecesidadMaterialDTO necesidad : necesidades) {
+
+      if (necesidad.tipo() == TipoNecesidadMaterialEnum.EXTRAORDINARIA) {
+
+        necesidadesValidas.add(necesidad);
+
+      }
+
+      else if (necesidad.tipo() == TipoNecesidadMaterialEnum.RECURRENTE && cantidad >= necesidad.cantidadObjetivo()) {
+
+        necesidadesValidas.add(necesidad);
+
+      }
+    }
+
+    if (necesidadesValidas.isEmpty()) {
+
+      Map<String,Object> body = Map.of(
+              "depositoID", depositoID,
+              "donacionID", donacionID,
+              "productoID", productoID,
+              "cantidad", cantidad
+      );
+
+      logisticaClient.agregarStock(body);
+
+      return;
+    }
+
+    String idPaquete = UUID.randomUUID().toString();
+
+    TipoAlgoritmoEnum algoritmo = deposito.algoritmo();
+
+    NecesidadMaterialDTO necesidadSeleccionada;
+
+    if (algoritmo == null || algoritmo == TipoAlgoritmoEnum.SUB_ATENDIDOS) {
+
+      necesidadSeleccionada = necesidadesValidas.stream().max(Comparator.comparing(NecesidadMaterialDTO::cantidadObjetivo)).orElseThrow();
+
+    } else if (algoritmo == TipoAlgoritmoEnum.PRIORIDAD_POR_SCORE) {
+
+      necesidadSeleccionada = necesidadesValidas.stream().max(Comparator.comparing(this::calcularScore)).orElseThrow();
+
+    } else {
+
+      throw new IllegalStateException("Algoritmo no soportado");
+    }
+
+    Integer cantidadAsignada = Math.min(cantidad, necesidadSeleccionada.cantidadObjetivo());
+
+    Integer sobrante = cantidad - cantidadAsignada;
+
+    Map<String, Object> body = Map.of(
+            "depositoID", depositoID,
+            "paqueteID", idPaquete,
+            "necesidadID", necesidadSeleccionada.id(),
+            "cantidadAsignada", cantidadAsignada,
+            "sobrante", sobrante,
+            "donacionID", donacionID,
+            "productoID", productoID
+    );
+
+    logisticaClient.crearAsignacion(body);
+
+    Metrics.counter("logistica.worker.donaciones.procesadas").increment();
+
+  }
+
+  public void agregarStock(Map<String,Object> body) {
+
+    String depositoID = (String) body.get("depositoID");
+
+    String donacionID = (String) body.get("donacionID");
+
+    String productoID = (String) body.get("productoID");
+
+    Integer cantidad = (Integer) body.get("cantidad");
+
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow();
+
+    Paquete paquete = new Paquete(donacionID, productoID, cantidad);
+
+    deposito.agregarPaqueteAlStock(paquete);
+
+    depositoRepository.save(deposito);
+  }
+
+  public AsignacionDTO crearAsignacion(Map<String, Object> body) {
+
+    String depositoID = (String) body.get("depositoID");
+
+    String paqueteID = (String) body.get("paqueteID");
+
+    String necesidadID = (String) body.get("necesidadID");
+
+    Integer cantidadAsignada = (Integer) body.get("cantidadAsignada");
+
+    Integer sobrante = (Integer) body.get("sobrante");
+
+    String donacionID = (String) body.get("donacionID");
+
+    String productoID = (String) body.get("productoID");
+
+    Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow();
+
+    Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada);
+
+    if (sobrante > 0) {
+
+      Paquete paqueteSobrante = new Paquete(donacionID, productoID, sobrante);
+
+      deposito.agregarPaqueteAlStock(paqueteSobrante);
+
+      depositoRepository.save(deposito);
+    }
+
+    Asignacion guardada = asignacionRepository.save(asignacion);
+
+    Metrics.counter("logistica.asignaciones.generadas").increment();
+
+    return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.ASIGNADA);
+  }
 
 
   @Override
@@ -139,62 +289,7 @@ public class Fachada implements FachadaLogistica {
 
     }
 
-    List<NecesidadMaterialDTO> necesidades = donadoresYEntidadesClient.obtenerNecesidadesInsatisfechasDe(productoID);
-    System.out.println("Necesidades encontradas: " + necesidades.size());
-
-    if(necesidades.isEmpty()){
-
-      Paquete paquete = new Paquete(donacionID, productoID, cantidad);
-
-      deposito.agregarPaqueteAlStock(paquete);
-
-      depositoRepository.save(deposito);
-
-      return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), obtenerStockDTO(deposito));
-
-    }
-
-
-    List<NecesidadMaterialDTO> necesidadesValidas = new ArrayList<>();
-
-    // Voy a considerar que las necesidades son validas si son extraordinarias o si la donacion alcanza para cubrir la necesidad
-
-    for (NecesidadMaterialDTO necesidad : necesidades) {
-
-      if (necesidad.tipo() == TipoNecesidadMaterialEnum.EXTRAORDINARIA) {
-
-        necesidadesValidas.add(necesidad);
-
-      }
-
-      else if (necesidad.tipo() == TipoNecesidadMaterialEnum.RECURRENTE && cantidad >= necesidad.cantidadObjetivo()) {
-
-        necesidadesValidas.add(necesidad);
-
-      }
-
-    }
-
-    if(necesidadesValidas.isEmpty()){
-
-      Paquete paquete = new Paquete(donacionID, productoID, cantidad);
-
-      deposito.agregarPaqueteAlStock(paquete);
-
-      depositoRepository.save(deposito);
-
-      return new DepositoDTO(deposito.getId().toString(), deposito.getAlgoritmoMatchmaking(), deposito.getNombre(), deposito.getDireccion(), deposito.getCapacidadMaxima(), obtenerStockDTO(deposito));
-    }
-
-    String idPaquete = UUID.randomUUID().toString();
-
-
-    PaqueteDTO paqueteDTO = new PaqueteDTO(idPaquete, donacionID, productoID, cantidad);
-
     publisherDonacion.publicar(new MensajeDonacion(depositoID, donacionID, productoID, cantidad));
-
-
-    AsignacionDTO asignacion = ejecutarMatchmaking(depositoID, paqueteDTO, necesidadesValidas);
 
     // Metrica de donacion procesada
     Metrics.counter("logistica.donaciones.gestionadas").increment();
@@ -293,6 +388,8 @@ public class Fachada implements FachadaLogistica {
     donacionesClient.cambiarEstadoDeDonacion(paqueteDTO.donacionID(), EstadoDonacionEnum.ACEPTADA);
 
     asignacion.completarEntrega();
+
+    asignacionRepository.save(asignacion);
 
     Metrics.counter("logistica.entregas.reportadas").increment();
   }

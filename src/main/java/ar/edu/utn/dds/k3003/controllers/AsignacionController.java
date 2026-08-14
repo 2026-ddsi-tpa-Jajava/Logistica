@@ -5,6 +5,7 @@ import ar.edu.utn.dds.k3003.catedra.dtos.logistica.AsignacionDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 
@@ -31,6 +32,20 @@ public class AsignacionController {
 
         } catch (RuntimeException e) {
             return ResponseEntity.internalServerError().body("Error interno al buscar la asignación");
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<?> crearAsignacion(
+            @RequestBody Map<String, Object> body) {
+
+        try {
+            AsignacionDTO dto = fachada.crearAsignacion(body);
+            return ResponseEntity.ok(dto);
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(e.getMessage());
         }
     }
 
