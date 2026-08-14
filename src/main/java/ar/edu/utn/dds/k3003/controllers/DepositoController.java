@@ -70,6 +70,7 @@ public class DepositoController {
         }
     }
 
+    // GET del stock de un determinado paquete
     @GetMapping("/{id}/stock")
     public ResponseEntity<?> obtenerStock(@PathVariable String id) {
 
@@ -138,6 +139,18 @@ public class DepositoController {
         return ResponseEntity.noContent().build();
     }
 
+
+    // DELETE de todos los paquetes
+    @DeleteMapping("/stock")
+    public ResponseEntity<Void> eliminarTodosLosPaquetes() {
+
+        fachada.eliminarTodosLosPaquetes();
+
+        return ResponseEntity.noContent().build();
+    }
+
+
+    // DELETE del stock de un determinado deposito
     @DeleteMapping("/{id}/stock")
     public ResponseEntity<?> vaciarStock(@PathVariable String id) {
 

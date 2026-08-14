@@ -139,6 +139,11 @@ public class Fachada implements FachadaLogistica {
 
   }
 
+  public void eliminarTodosLosPaquetes() {
+
+    depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear();depositoRepository.save(deposito);});
+  }
+
   // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
 
   public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
