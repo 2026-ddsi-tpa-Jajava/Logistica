@@ -20,11 +20,11 @@ public class LogisticaClient {
         }
     }
 
-    public AsignacionDTO crearAsignacion(Map<String, Object> body) {
+    public void crearAsignacion(Map<String, Object> body) {
 
         try {
 
-            return HttpClientBuilder.post("https://logistica-hjaw.onrender.com" + "/asignaciones", body, AsignacionDTO.class);
+            HttpClientBuilder.post("https://logistica-hjaw.onrender.com" + "/asignaciones", body, String.class);
 
         } catch (Exception e) {
 
