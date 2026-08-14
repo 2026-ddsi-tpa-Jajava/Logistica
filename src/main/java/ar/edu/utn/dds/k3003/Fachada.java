@@ -152,6 +152,8 @@ public class Fachada implements FachadaLogistica {
               "cantidad", cantidad
       );
 
+      Metrics.counter("logistica.worker.post_stock").increment();
+
       logisticaClient.agregarStock(body);
 
       return;
@@ -182,6 +184,8 @@ public class Fachada implements FachadaLogistica {
               "productoID", productoID,
               "cantidad", cantidad
       );
+
+      Metrics.counter("logistica.worker.post_stock").increment();
 
       logisticaClient.agregarStock(body);
 
@@ -220,6 +224,8 @@ public class Fachada implements FachadaLogistica {
             "donacionID", donacionID,
             "productoID", productoID
     );
+
+    Metrics.counter("logistica.worker.post_asignaciones").increment();
 
     logisticaClient.crearAsignacion(body);
 
@@ -269,6 +275,8 @@ public class Fachada implements FachadaLogistica {
     Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada);
 
     if (sobrante > 0) {
+
+      Metrics.counter("logistica.sobrantes.generados").increment();
 
       Paquete paqueteSobrante = new Paquete(donacionID, productoID, sobrante);
 
@@ -373,10 +381,14 @@ public class Fachada implements FachadaLogistica {
 
     if (algoritmo == null || algoritmo == TipoAlgoritmoEnum.SUB_ATENDIDOS) {
 
+      Metrics.counter("logistica.matchmaking.sub_atendidos").increment();
+
       necesidadSeleccionada = necesidades.stream().max(Comparator.comparing(NecesidadMaterialDTO::cantidadObjetivo)).orElseThrow();
 
 
     } else if (algoritmo == TipoAlgoritmoEnum.PRIORIDAD_POR_SCORE) {
+
+      Metrics.counter("logistica.matchmaking.prioridad_score").increment();
 
       necesidadSeleccionada = necesidades.stream().max(Comparator.comparing(this::calcularScore)).orElseThrow();
     }
