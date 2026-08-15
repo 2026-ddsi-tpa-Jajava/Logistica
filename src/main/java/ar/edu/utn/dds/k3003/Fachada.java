@@ -470,13 +470,21 @@ public class Fachada implements FachadaLogistica {
   @Override
   public void reportarEntrega(PaqueteDTO paqueteDTO) {
 
+    System.out.println("ENTRO A REPORTAR ENTREGA");
+
     if (paqueteDTO == null) {
       throw new RuntimeException();
     }
 
     Asignacion asignacion = asignacionRepository.findByIdPaquete(paqueteDTO.id()).orElseThrow(NoSuchElementException::new);
 
+    System.out.println("ASIGNACION ENCONTRADA");
+
     donadoresYEntidadesClient.satisfacerNecesidad(asignacion.getIdEntidad(), asignacion.getCantidadAsignada());
+
+    System.out.println("SATISFACER NECESIDAD OK");
+
+    System.out.println("CAMBIANDO DONACION");
 
     donacionesClient.cambiarEstadoDeDonacion(paqueteDTO.donacionID(), EstadoDonacionEnum.ACEPTADA);
 
