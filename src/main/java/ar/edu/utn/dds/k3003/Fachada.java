@@ -144,6 +144,21 @@ public class Fachada implements FachadaLogistica {
     depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear();depositoRepository.save(deposito);});
   }
 
+  public AsignacionDTO crearAsignacionDesdeStock(Map<String,Object> body) {
+
+    String paqueteID = (String) body.get("paqueteID");
+
+    String necesidadID = (String) body.get("necesidadID");
+
+    Integer cantidadAsignada = (Integer) body.get("cantidadAsignada");
+
+    Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada, "STOCK");
+
+    Asignacion guardada = asignacionRepository.save(asignacion);
+
+    return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.ASIGNADA);
+  }
+
   // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
 
   public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
@@ -283,7 +298,7 @@ public class Fachada implements FachadaLogistica {
 
     Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow();
 
-    Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada);
+    Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada, "MATCHMAKING");
 
     if (sobrante > 0) {
 
@@ -423,7 +438,7 @@ public class Fachada implements FachadaLogistica {
     }
 
 
-    Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad, cantidadAsignada);
+    Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad, cantidadAsignada, "MATCHMAKING");
 
     if (sobrante > 0) {
 

@@ -74,6 +74,19 @@ public class AsignacionController {
         }
     }
 
+    @PostMapping("/stock")
+    public ResponseEntity<?> crearAsignacionDesdeStock(@RequestBody Map<String,Object> body) {
+
+        try {
+
+            return ResponseEntity.ok(fachada.crearAsignacionDesdeStock(body));
+
+        } catch (Exception e) {
+
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
 
 
     @DeleteMapping

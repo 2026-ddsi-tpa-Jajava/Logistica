@@ -13,17 +13,19 @@ public class Asignacion {
     private Integer cantidadAsignada;
     @Enumerated(EnumType.STRING)
     private EstadoAsignacion estado;
+    private String origenAsignacion;
 
 
     public Asignacion() {
     }
 
-    public Asignacion(String idPaquete, String idEntidad, Integer cantidadAsignada){
+    public Asignacion(String idPaquete, String idEntidad, Integer cantidadAsignada, String origenAsignacion){
 
         this.idPaquete = idPaquete;
         this.idEntidad = idEntidad;
         this.cantidadAsignada = cantidadAsignada;
         this.estado = EstadoAsignacion.ASIGNADA;
+        this.origenAsignacion = origenAsignacion;
 
     }
 
@@ -43,6 +45,10 @@ public class Asignacion {
 
     public EstadoAsignacion getEstado() {
         return estado;
+    }
+
+    public String getOrigenAsignacion() {
+        return origenAsignacion;
     }
 
     public void completarEntrega(){
