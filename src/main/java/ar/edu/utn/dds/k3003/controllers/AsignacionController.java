@@ -75,7 +75,7 @@ public class AsignacionController {
     }
 
     @PostMapping("/stock")
-    public ResponseEntity<?> crearAsignacionDesdeStock(@RequestBody Map<String,Object> body) {
+    public ResponseEntity<?> crearAsignacionDesdeStock(@RequestBody Map<String,String> body) {
 
         try {
 

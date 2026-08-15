@@ -17,7 +17,7 @@ public class DonacionesClient {
         try {
 
             Map<String, String> body = Map.of("estado", estado.name());
-            
+
             return HttpClientBuilder.patch("https://donaciones-5u8i.onrender.com/donaciones/" + id + "/estado", body, DonacionDTO.class);
 
         } catch (Exception e) {

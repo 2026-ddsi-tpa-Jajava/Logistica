@@ -144,13 +144,13 @@ public class Fachada implements FachadaLogistica {
     depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear();depositoRepository.save(deposito);});
   }
 
-  public AsignacionDTO crearAsignacionDesdeStock(Map<String,Object> body) {
+  public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
 
     String paqueteID = (String) body.get("paqueteID");
 
     String necesidadID = (String) body.get("necesidadID");
 
-    Integer cantidadAsignada = (Integer) body.get("cantidadAsignada");
+    Integer cantidadAsignada = Integer.valueOf((body.get("cantidadAsignada")));
 
     Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada, "STOCK");
 
