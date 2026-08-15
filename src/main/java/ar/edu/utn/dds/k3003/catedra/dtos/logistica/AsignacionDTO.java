@@ -6,5 +6,6 @@ public record AsignacionDTO(
     String id,
     String paqueteID,
     String necesidadID,
+    String idEntidad,
     LocalDateTime fecha,
     EstadoAsginacionEnum estado) {}

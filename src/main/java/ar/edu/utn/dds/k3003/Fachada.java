@@ -98,11 +98,12 @@ public class Fachada implements FachadaLogistica {
             .map(a -> new AsignacionDTO(
                     a.getId().toString(),
                     a.getIdPaquete(),
+                    a.getNecesidadID(),
                     a.getIdEntidad(),
                     LocalDateTime.now(),
-                    EstadoAsginacionEnum.valueOf(
-                            a.getEstado().name())
-            )).toList();
+                    EstadoAsginacionEnum.valueOf(a.getEstado().name())
+            ))
+            .toList();
   }
 
   public List<PaqueteDTO> obtenerStock(String depositoID) {
@@ -123,14 +124,17 @@ public class Fachada implements FachadaLogistica {
 
   public List<AsignacionDTO> obtenerAsignacionesPorEstado(EstadoAsignacion estado) {
 
-    return asignacionRepository.findByEstado(estado).stream().map(a -> new AsignacionDTO(
+    return asignacionRepository.findByEstado(estado)
+            .stream()
+            .map(a -> new AsignacionDTO(
                     a.getId().toString(),
                     a.getIdPaquete(),
+                    a.getNecesidadID(),
                     a.getIdEntidad(),
                     LocalDateTime.now(),
-                    EstadoAsginacionEnum.valueOf(
-                            a.getEstado().name())
-            )).toList();
+                    EstadoAsginacionEnum.valueOf(a.getEstado().name())
+            ))
+            .toList();
   }
 
   public Integer obtenerCantidadStockPorProducto(String productoID) {
@@ -146,17 +150,26 @@ public class Fachada implements FachadaLogistica {
 
   public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
 
-    String paqueteID = (String) body.get("paqueteID");
+    String paqueteID = body.get("paqueteID");
 
-    String necesidadID = (String) body.get("necesidadID");
+    String necesidadID =  body.get("necesidadID");
 
     Integer cantidadAsignada = Integer.valueOf((body.get("cantidadAsignada")));
 
-    Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada, "STOCK");
+    String idEntidad = body.get("entidadID");
+
+    Asignacion asignacion = new Asignacion(paqueteID, idEntidad, necesidadID, cantidadAsignada, "STOCK");
 
     Asignacion guardada = asignacionRepository.save(asignacion);
 
-    return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.ASIGNADA);
+    return new AsignacionDTO(
+            guardada.getId().toString(),
+            guardada.getIdPaquete(),
+            guardada.getNecesidadID(),
+            guardada.getIdEntidad(),
+            LocalDateTime.now(),
+            EstadoAsginacionEnum.ASIGNADA
+    );
   }
 
   // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
@@ -247,6 +260,7 @@ public class Fachada implements FachadaLogistica {
             "depositoID", depositoID,
             "paqueteID", idPaquete,
             "necesidadID", necesidadSeleccionada.id(),
+            "idEntidad", necesidadSeleccionada.entidadID(),
             "cantidadAsignada", cantidadAsignada,
             "sobrante", sobrante,
             "donacionID", donacionID,
@@ -294,6 +308,8 @@ public class Fachada implements FachadaLogistica {
 
     String necesidadID = (String) body.get("necesidadID");
 
+    String idEntidad = (String) body.get("idEntidad");
+
     Integer cantidadAsignada = (Integer) body.get("cantidadAsignada");
 
     Integer sobrante = (Integer) body.get("sobrante");
@@ -304,7 +320,13 @@ public class Fachada implements FachadaLogistica {
 
     Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow();
 
-    Asignacion asignacion = new Asignacion(paqueteID, necesidadID, cantidadAsignada, "MATCHMAKING");
+    Asignacion  asignacion = new Asignacion(
+                    paqueteID,
+                    idEntidad,
+                    necesidadID,
+                    cantidadAsignada,
+                    "MATCHMAKING"
+            );
 
     if (sobrante > 0) {
 
@@ -321,7 +343,14 @@ public class Fachada implements FachadaLogistica {
 
     Metrics.counter("logistica.asignaciones.generadas").increment();
 
-    return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.ASIGNADA);
+    return new AsignacionDTO(
+            guardada.getId().toString(),
+            guardada.getIdPaquete(),
+            guardada.getNecesidadID(),
+            guardada.getIdEntidad(),
+            LocalDateTime.now(),
+            EstadoAsginacionEnum.ASIGNADA
+    );
   }
 
   //---------------------------------METODOS DEL CONTRATO DE FACHADALOGISTICA-------------------------------------------
@@ -361,7 +390,14 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion asignacion = asignacionRepository.findByIdPaquete(paqueteID).orElseThrow(NoSuchElementException :: new);
 
-    return new AsignacionDTO(asignacion.getId().toString(), asignacion.getIdPaquete(), asignacion.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.valueOf(asignacion.getEstado().name()));
+    return new AsignacionDTO(
+            asignacion.getId().toString(),
+            asignacion.getIdPaquete(),
+            asignacion.getNecesidadID(),
+            asignacion.getIdEntidad(),
+            LocalDateTime.now(),
+            EstadoAsginacionEnum.valueOf(asignacion.getEstado().name())
+    );
   }
 
   @Override
@@ -432,7 +468,7 @@ public class Fachada implements FachadaLogistica {
 
     }
 
-    String idNecesidad = necesidadSeleccionada.id();
+    String necesidadID = necesidadSeleccionada.id();
 
     // Me fijo lo que va a sobrar para despues guardarlo en el stock
     Integer cantidadAsignada = Math.min(paqueteDTO.cantidad(), necesidadSeleccionada.cantidadObjetivo());
@@ -440,12 +476,19 @@ public class Fachada implements FachadaLogistica {
     Integer sobrante = paqueteDTO.cantidad() - cantidadAsignada;
 
 
-    if (idNecesidad == null) {
+    if (necesidadID == null) {
       throw new IllegalStateException("La necesidad seleccionada no tiene ID válido");
     }
 
 
-    Asignacion asignacion = new Asignacion(paqueteDTO.id(), idNecesidad, cantidadAsignada, "MATCHMAKING");
+    Asignacion asignacion =
+            new Asignacion(
+                    paqueteDTO.id(),
+                    necesidadSeleccionada.entidadID(),
+                    necesidadID,
+                    cantidadAsignada,
+                    "MATCHMAKING"
+            );
 
     if (sobrante > 0) {
 
@@ -463,7 +506,14 @@ public class Fachada implements FachadaLogistica {
     // Metrica de asignacion creada
     Metrics.counter("logistica.asignaciones.generadas").increment();
 
-    return new AsignacionDTO(guardada.getId().toString(), guardada.getIdPaquete(), guardada.getIdEntidad(), LocalDateTime.now(), EstadoAsginacionEnum.valueOf(guardada.getEstado().name()));
+    return new AsignacionDTO(
+            guardada.getId().toString(),
+            guardada.getIdPaquete(),
+            guardada.getNecesidadID(),
+            guardada.getIdEntidad(),
+            LocalDateTime.now(),
+            EstadoAsginacionEnum.valueOf(guardada.getEstado().name())
+    );
 
   }
 
@@ -480,7 +530,7 @@ public class Fachada implements FachadaLogistica {
 
     System.out.println("ASIGNACION ENCONTRADA");
 
-    donadoresYEntidadesClient.satisfacerNecesidad(asignacion.getIdEntidad(), asignacion.getCantidadAsignada());
+    donadoresYEntidadesClient.satisfacerNecesidad(asignacion.getNecesidadID(), asignacion.getCantidadAsignada());
 
     System.out.println("SATISFACER NECESIDAD OK");
 
