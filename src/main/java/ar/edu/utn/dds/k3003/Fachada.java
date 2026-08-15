@@ -372,6 +372,7 @@ public class Fachada implements FachadaLogistica {
       throw new IllegalArgumentException("No hay espacio suficiente en el depósito");
 
     }
+    System.out.println("PUBLICANDO " + donacionID);
 
     publisherDonacion.publicar(new MensajeDonacion(depositoID, donacionID, productoID, cantidad));
 
