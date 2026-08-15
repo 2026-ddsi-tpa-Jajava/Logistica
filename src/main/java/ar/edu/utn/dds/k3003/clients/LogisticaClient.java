@@ -13,7 +13,7 @@ public class LogisticaClient {
     public DepositoDTO obtenerDeposito(String depositoID) {
 
         try {
-            return HttpClientBuilder.get("https://logistica-hjaw.onrender.com" + "/depositos/" + depositoID, DepositoDTO.class);
+            return HttpClientBuilder.get("https://logistica-hjaw.onrender.com/depositos/" + depositoID, DepositoDTO.class);
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -36,7 +36,7 @@ public class LogisticaClient {
 
         try {
 
-            HttpClientBuilder.postWithoutResponse("https://logistica-hjaw.onrender.com" + "/stock", body);
+            HttpClientBuilder.postWithoutResponse("https://logistica-hjaw.onrender.com/depositos/stock", body);
 
         } catch (Exception e) {
 
