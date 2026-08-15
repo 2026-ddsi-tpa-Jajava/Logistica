@@ -10,7 +10,7 @@ public class DonacionesClient {
 
     public DonacionDTO cambiarEstadoDeDonacion(String id, EstadoDonacionEnum estado) {
         try {
-            return HttpClientBuilder.patch("https://donaciones-5u8i.onrender.com/donaciones/" + id, estado, DonacionDTO.class);
+            return HttpClientBuilder.patch("https://donaciones-5u8i.onrender.com/donaciones/" + id + "/estado", estado, DonacionDTO.class);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
