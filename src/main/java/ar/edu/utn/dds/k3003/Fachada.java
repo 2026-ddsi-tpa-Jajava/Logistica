@@ -180,6 +180,8 @@ public class Fachada implements FachadaLogistica {
 
       Metrics.counter("logistica.worker.post_stock").increment();
 
+      System.out.println("MANDANDO A STOCK");
+      System.out.println(body);
       logisticaClient.agregarStock(body);
 
       return;
@@ -263,6 +265,8 @@ public class Fachada implements FachadaLogistica {
 
   public void agregarStock(Map<String,Object> body) {
 
+    System.out.println("ENTRO A agregarStock");
+
     String depositoID = (String) body.get("depositoID");
 
     String donacionID = (String) body.get("donacionID");
@@ -278,6 +282,8 @@ public class Fachada implements FachadaLogistica {
     deposito.agregarPaqueteAlStock(paquete);
 
     depositoRepository.save(deposito);
+
+    System.out.println("STOCK GUARDADO");
   }
 
   public AsignacionDTO crearAsignacion(Map<String, Object> body) {
