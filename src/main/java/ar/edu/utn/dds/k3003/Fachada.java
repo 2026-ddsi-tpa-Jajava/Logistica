@@ -35,6 +35,8 @@ public class Fachada implements FachadaLogistica {
   public Fachada() {
   }
 
+  private Long ultimoIdPaquete = 0L;
+
   // ------------------------------------------INYECCION DE CLIENTS-----------------------------------------------------
 
   @Autowired
@@ -75,6 +77,14 @@ public class Fachada implements FachadaLogistica {
     }
 
     return paquetesDTO;
+
+  }
+
+  private String generarIdPaquete() {
+
+    ultimoIdPaquete++;
+
+    return ultimoIdPaquete.toString();
 
   }
 
@@ -119,6 +129,8 @@ public class Fachada implements FachadaLogistica {
 
     deposito.getStockActual().clear();
 
+    deposito.setCantidadStock(0);
+
     depositoRepository.save(deposito);
   }
 
@@ -145,7 +157,7 @@ public class Fachada implements FachadaLogistica {
 
   public void eliminarTodosLosPaquetes() {
 
-    depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear();depositoRepository.save(deposito);});
+    depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear(); deposito.setCantidadStock(0); depositoRepository.save(deposito);});
   }
 
   public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
@@ -233,7 +245,7 @@ public class Fachada implements FachadaLogistica {
       return;
     }
 
-    String idPaquete = UUID.randomUUID().toString();
+    String idPaquete = generarIdPaquete();
 
     TipoAlgoritmoEnum algoritmo = deposito.algoritmo();
 

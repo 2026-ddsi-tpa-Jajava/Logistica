@@ -16,6 +16,7 @@ public class Deposito {
     private String nombre;
     private String direccion;
     private Integer capacidadMaxima;
+    private Integer cantidadStock;
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<Paquete> stockActual;
@@ -32,6 +33,7 @@ public class Deposito {
         this.capacidadMaxima = capacidadMaxima;
         this.algoritmoMatchmaking = null;
         this.stockActual = new ArrayList<>();
+        this.cantidadStock = 0;
     }
 
 
@@ -59,6 +61,10 @@ public class Deposito {
 
     public void setAlgoritmoMatchmaking(TipoAlgoritmoEnum algoritmoMatchmaking) {this.algoritmoMatchmaking = algoritmoMatchmaking;}
 
+    public Integer getCantidadStock() {return cantidadStock;}
+
+    public void setCantidadStock(Integer cantidadStock) {this.cantidadStock = cantidadStock;}
+
 
     // modificación
     public void modificarStributos(String nombre, String direccion, Integer capacidadMaxima) {
@@ -70,6 +76,7 @@ public class Deposito {
     // agregar paquete al stock
     public void agregarPaqueteAlStock(Paquete paquete){
         this.stockActual.add(paquete);
+        this.cantidadStock += paquete.getCantidad();
 
     }
 
