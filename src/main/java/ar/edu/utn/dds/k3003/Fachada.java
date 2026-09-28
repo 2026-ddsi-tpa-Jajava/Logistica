@@ -26,6 +26,8 @@ import java.util.*;
 
 import io.micrometer.core.instrument.Metrics;
 import lombok.val;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +36,8 @@ public class Fachada implements FachadaLogistica {
 
   public Fachada() {
   }
+
+  private static final Logger log = LoggerFactory.getLogger(Fachada.class);
 
   private Long ultimoIdPaquete = 0L;
 
@@ -172,6 +176,10 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion asignacion = new Asignacion(paqueteID, idEntidad, necesidadID, cantidadAsignada, "STOCK");
 
+    // LOG DE ASIGNACION CREADA
+
+    log.info("Asignacion creada necesidad={} cantidad={} origen=STOCK", necesidadID, cantidadAsignada);
+
     Asignacion guardada = asignacionRepository.save(asignacion);
 
     return new AsignacionDTO(
@@ -187,6 +195,10 @@ public class Fachada implements FachadaLogistica {
   // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
 
   public void procesarDonacionWorker(String depositoID, String donacionID, String productoID, Integer cantidad){
+
+    // LOG PARA QUE SE VEA QUE EL WORKER ESTA PROCESANDO DONACION
+
+    log.info("Worker procesando donacion {}", donacionID);
 
     DepositoDTO deposito = logisticaClient.obtenerDeposito(depositoID);
 
@@ -291,7 +303,7 @@ public class Fachada implements FachadaLogistica {
 
   public void agregarStock(Map<String,Object> body) {
 
-    System.out.println("ENTRO A agregarStock");
+    // System.out.println("ENTRO A agregarStock");
 
     String depositoID = (String) body.get("depositoID");
 
@@ -300,6 +312,9 @@ public class Fachada implements FachadaLogistica {
     String productoID = (String) body.get("productoID");
 
     Integer cantidad = (Integer) body.get("cantidad");
+
+    // LOG PARA DECIR QUE SE ESTA AGREGANDO STOCK
+    log.info("Agregando stock. deposito={} donacion={} producto={} cantidad={}", depositoID, donacionID, productoID, cantidad);
 
     Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow();
 
@@ -313,6 +328,7 @@ public class Fachada implements FachadaLogistica {
   }
 
   public AsignacionDTO crearAsignacion(Map<String, Object> body) {
+
 
     String depositoID = (String) body.get("depositoID");
 
@@ -329,6 +345,9 @@ public class Fachada implements FachadaLogistica {
     String donacionID = (String) body.get("donacionID");
 
     String productoID = (String) body.get("productoID");
+
+    // LOG PARA DECIR QUE SE ESTA CREANDO UNA ASIGNACION
+    log.info("Creando asignacion. necesidad={} entidad={} cantidad={} origen=MATCHMAKING", necesidadID, idEntidad, cantidadAsignada);
 
     Deposito deposito = depositoRepository.findById(Long.parseLong(depositoID)).orElseThrow();
 
@@ -427,6 +446,10 @@ public class Fachada implements FachadaLogistica {
 
     }
     System.out.println("PUBLICANDO " + donacionID);
+
+    // LOG SOBRE GESTION DE LA DONACION
+
+    log.info("Gestionando donacion id={} producto={} cantidad={}", donacionID, productoID, cantidad);
 
     publisherDonacion.publicar(new MensajeDonacion(depositoID, donacionID, productoID, cantidad));
 
@@ -532,7 +555,10 @@ public class Fachada implements FachadaLogistica {
   @Override
   public void reportarEntrega(PaqueteDTO paqueteDTO) {
 
-    System.out.println("ENTRO A REPORTAR ENTREGA");
+    // System.out.println("ENTRO A REPORTAR ENTREGA");
+
+    //LOG PARA DECIR QUE SE ESTA REPORTANDO UNA ENTREGA
+    log.info("Reportando entrega donacion={}", paqueteDTO.donacionID());
 
     if (paqueteDTO == null) {
       throw new RuntimeException();
