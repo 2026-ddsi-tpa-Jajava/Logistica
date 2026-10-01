@@ -3,6 +3,7 @@ package ar.edu.utn.dds.k3003.controllers;
 import ar.edu.utn.dds.k3003.Fachada;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.DepositoDTO;
 import ar.edu.utn.dds.k3003.catedra.dtos.logistica.PaqueteDTO;
+import ar.edu.utn.dds.k3003.catedra.dtos.logistica.TipoAlgoritmoEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -159,6 +160,32 @@ public class DepositoController {
             fachada.vaciarStock(id);
 
             return ResponseEntity.noContent().build();
+
+        } catch (NoSuchElementException e) {
+
+            return ResponseEntity.notFound().build();
+
+        } catch (Exception e) {
+
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    // PATCH del algoritmo de matchmaking de un deposito
+    @PatchMapping("/{id}/algoritmo")
+    public ResponseEntity<?> configurarAlgoritmo(@PathVariable String id, @RequestBody Map<String, String> body) {
+
+        try {
+
+            TipoAlgoritmoEnum algoritmo = TipoAlgoritmoEnum.valueOf(body.get("algoritmo").toUpperCase());
+
+            fachada.setAlgoritmoMM(id, algoritmo);
+
+            return ResponseEntity.ok().build();
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity.badRequest().body("Algoritmo inválido");
 
         } catch (NoSuchElementException e) {
 
