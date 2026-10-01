@@ -160,6 +160,16 @@ public class LogisticaTools {
 
     }
 
+    @Tool(name = "consultar_stock_total_deposito", description = "Obtiene la cantidad total de productos almacenados en un depósito")
+
+    public Integer consultarStockTotalDeposito(@ToolParam(description = "ID del depósito", required = true) String depositoID) {
+
+        DepositoDTO deposito = fachada.buscarDepositoPorID(depositoID);
+
+        return deposito.stockActual().stream().mapToInt(PaqueteDTO::cantidad).sum();
+
+    }
+
     @Tool(name = "prueba_logistica", description = "Tool de prueba")
 
     public String prueba(){
