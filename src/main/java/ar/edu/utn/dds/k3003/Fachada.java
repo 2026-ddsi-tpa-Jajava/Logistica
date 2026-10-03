@@ -174,6 +174,51 @@ public class Fachada implements FachadaLogistica {
 
     String idEntidad = body.get("entidadID");
 
+    log.info("Consumiendo stock. paquete={} cantidadAsignada={}", paqueteID, cantidadAsignada);
+
+    Long idPaquete = Long.parseLong(paqueteID);
+
+    Deposito deposito = depositoRepository.findAll()
+            .stream()
+            .filter(d -> d.getStockActual()
+                    .stream()
+                    .anyMatch(p -> p.getId().equals(idPaquete)))
+            .findFirst()
+            .orElseThrow();
+
+    Paquete paquete = deposito.getStockActual()
+            .stream()
+            .filter(p -> p.getId().equals(idPaquete))
+            .findFirst()
+            .orElseThrow();
+
+    if (cantidadAsignada > paquete.getCantidad()) {
+
+      throw new IllegalArgumentException(
+              "No hay stock suficiente en el paquete"
+      );
+    }
+
+    Integer restante =
+            paquete.getCantidad() - cantidadAsignada;
+
+    if (restante == 0) {
+
+      deposito.getStockActual().remove(paquete);
+
+    } else {
+
+      paquete.setCantidad(restante);
+    }
+
+    deposito.setCantidadStock(
+            deposito.getCantidadStock()
+                    - cantidadAsignada
+    );
+
+    depositoRepository.save(deposito);
+
+
     Asignacion asignacion = new Asignacion(paqueteID, idEntidad, necesidadID, cantidadAsignada, "STOCK");
 
     // LOG DE ASIGNACION CREADA
