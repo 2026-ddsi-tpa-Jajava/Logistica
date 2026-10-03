@@ -178,40 +178,59 @@ public class Fachada implements FachadaLogistica {
     depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear(); deposito.setCantidadStock(0); depositoRepository.save(deposito);});
   }
 
-  public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
+  public AsignacionDTO crearAsignacionDesdeStock(
+          Map<String,String> body) {
 
     log.info("BODY RECIBIDO = {}", body);
 
-    String paqueteID = body.get("paqueteID");
+    String productoID = body.get("productoID");
 
-    String necesidadID =  body.get("necesidadID");
+    String necesidadID = body.get("necesidadID");
 
-    Integer cantidadAsignada = Integer.valueOf((body.get("cantidadAsignada")));
+    Integer cantidadAsignada =
+            Integer.valueOf(
+                    body.get("cantidadAsignada")
+            );
 
-    String idEntidad = body.get("entidadID");
+    if (productoID == null) {
+      throw new IllegalArgumentException(
+              "Falta productoID"
+      );
+    }
 
-    log.info("Consumiendo stock. paquete={} cantidadAsignada={}", paqueteID, cantidadAsignada);
-
-    Long idPaquete = Long.parseLong(paqueteID);
+    if (necesidadID == null) {
+      throw new IllegalArgumentException(
+              "Falta necesidadID"
+      );
+    }
 
     Deposito deposito = depositoRepository.findAll()
             .stream()
             .filter(d -> d.getStockActual()
                     .stream()
-                    .anyMatch(p -> p.getId().equals(idPaquete)))
+                    .anyMatch(p ->
+                            productoID.equals(
+                                    p.getProducto()
+                            )))
             .findFirst()
-            .orElseThrow();
+            .orElseThrow(() ->
+                    new NoSuchElementException(
+                            "No existe stock para el producto " + productoID
+                    ));
 
     Paquete paquete = deposito.getStockActual()
             .stream()
-            .filter(p -> p.getId().equals(idPaquete))
+            .filter(p ->
+                    productoID.equals(
+                            p.getProducto()
+                    ))
             .findFirst()
             .orElseThrow();
 
     if (cantidadAsignada > paquete.getCantidad()) {
 
       throw new IllegalArgumentException(
-              "No hay stock suficiente en el paquete"
+              "No hay stock suficiente para el producto"
       );
     }
 
@@ -234,14 +253,22 @@ public class Fachada implements FachadaLogistica {
 
     depositoRepository.save(deposito);
 
+    Asignacion asignacion = new Asignacion(
+            paquete.getId().toString(),
+            null,
+            necesidadID,
+            cantidadAsignada,
+            "STOCK"
+    );
 
-    Asignacion asignacion = new Asignacion(paqueteID, idEntidad, necesidadID, cantidadAsignada, "STOCK");
+    log.info(
+            "Asignacion creada necesidad={} cantidad={} origen=STOCK",
+            necesidadID,
+            cantidadAsignada
+    );
 
-    // LOG DE ASIGNACION CREADA
-
-    log.info("Asignacion creada necesidad={} cantidad={} origen=STOCK", necesidadID, cantidadAsignada);
-
-    Asignacion guardada = asignacionRepository.save(asignacion);
+    Asignacion guardada =
+            asignacionRepository.save(asignacion);
 
     return new AsignacionDTO(
             guardada.getId().toString(),
