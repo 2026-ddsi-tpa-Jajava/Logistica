@@ -180,6 +180,7 @@ public class Fachada implements FachadaLogistica {
 
   public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
 
+    log.info("BODY RECIBIDO = {}", body);
 
     String paqueteID = body.get("paqueteID");
 
