@@ -166,6 +166,7 @@ public class Fachada implements FachadaLogistica {
 
   public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
 
+
     String paqueteID = body.get("paqueteID");
 
     String necesidadID =  body.get("necesidadID");
@@ -252,12 +253,28 @@ public class Fachada implements FachadaLogistica {
     System.out.println("Necesidades encontradas: " + necesidades.size());
 
     if (necesidades.isEmpty()) {
-
+      /*
       Map<String,Object> body = Map.of(
               "depositoID", depositoID,
               "donacionID", donacionID,
               "productoID", productoID,
               "cantidad", cantidad
+      );
+  */
+
+      Map<String,Object> body = new HashMap<>();
+
+      body.put("depositoID", depositoID);
+      body.put("donacionID", donacionID);
+      body.put("productoID", productoID);
+      body.put("cantidad", cantidad);
+
+      log.info(
+              "BODY STOCK depositoID={} donacionID={} productoID={} cantidad={}",
+              depositoID,
+              donacionID,
+              productoID,
+              cantidad
       );
 
       Metrics.counter("logistica.worker.post_stock").increment();
@@ -287,14 +304,29 @@ public class Fachada implements FachadaLogistica {
     }
 
     if (necesidadesValidas.isEmpty()) {
-
+      /*
       Map<String,Object> body = Map.of(
               "depositoID", depositoID,
               "donacionID", donacionID,
               "productoID", productoID,
               "cantidad", cantidad
       );
+    */
 
+      Map<String,Object> body = new HashMap<>();
+
+      body.put("depositoID", depositoID);
+      body.put("donacionID", donacionID);
+      body.put("productoID", productoID);
+      body.put("cantidad", cantidad);
+
+      log.info(
+              "BODY STOCK depositoID={} donacionID={} productoID={} cantidad={}",
+              depositoID,
+              donacionID,
+              productoID,
+              cantidad
+      );
       Metrics.counter("logistica.worker.post_stock").increment();
 
       logisticaClient.agregarStock(body);
