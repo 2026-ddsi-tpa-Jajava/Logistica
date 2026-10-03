@@ -153,10 +153,24 @@ public class Fachada implements FachadaLogistica {
             .toList();
   }
 
-  public Integer obtenerCantidadStockPorProducto(String productoID) {
+  public Integer obtenerCantidadStockPorProducto(
+          String productoID) {
 
-    return depositoRepository.findAll().stream().flatMap(d -> d.getStockActual().stream()).filter(p -> p.getProducto().equals(productoID)).mapToInt(Paquete::getCantidad).sum();
-
+    return depositoRepository.findAll()
+            .stream()
+            .flatMap(
+                    d -> d.getStockActual().stream()
+            )
+            .filter(
+                    p -> Objects.equals(
+                            p.getProducto(),
+                            productoID
+                    )
+            )
+            .mapToInt(
+                    Paquete::getCantidad
+            )
+            .sum();
   }
 
   public void eliminarTodosLosPaquetes() {
