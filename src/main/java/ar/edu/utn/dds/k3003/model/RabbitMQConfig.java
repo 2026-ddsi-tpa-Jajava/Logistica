@@ -17,6 +17,13 @@ public class RabbitMQConfig {
     }
 
     @Bean
+    public Queue consultasQueue() {
+
+        return new Queue("consultas.queue", true);
+
+    }
+
+    @Bean
     public MessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }

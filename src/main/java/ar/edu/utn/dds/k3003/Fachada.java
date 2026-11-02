@@ -54,6 +54,9 @@ public class Fachada implements FachadaLogistica {
   private PublisherDonacion publisherDonacion;
 
   @Autowired
+  private PublisherConsulta publisherConsulta;
+
+  @Autowired
   private DepositoRepository depositoRepository;
   @Autowired
   private AsignacionRepository asignacionRepository;
@@ -136,6 +139,10 @@ public class Fachada implements FachadaLogistica {
     deposito.setCantidadStock(0);
 
     depositoRepository.save(deposito);
+
+    // PUBLICAR MENSAJE DE STOCK VACIADO
+
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "STOCK_VACIADO", depositoID));
   }
 
   public List<AsignacionDTO> obtenerAsignacionesPorEstado(EstadoAsignacion estado) {
@@ -153,33 +160,19 @@ public class Fachada implements FachadaLogistica {
             .toList();
   }
 
-  public Integer obtenerCantidadStockPorProducto(
-          String productoID) {
+  public Integer obtenerCantidadStockPorProducto(String productoID) {
 
-    return depositoRepository.findAll()
-            .stream()
-            .flatMap(
-                    d -> d.getStockActual().stream()
-            )
-            .filter(
-                    p -> Objects.equals(
-                            p.getProducto(),
-                            productoID
-                    )
-            )
-            .mapToInt(
-                    Paquete::getCantidad
-            )
-            .sum();
+    return depositoRepository.findAll().stream().flatMap(d -> d.getStockActual().stream()).filter(p -> Objects.equals(p.getProducto(), productoID)).mapToInt(Paquete::getCantidad).sum();
+
   }
 
   public void eliminarTodosLosPaquetes() {
 
     depositoRepository.findAll().forEach(deposito -> {deposito.getStockActual().clear(); deposito.setCantidadStock(0); depositoRepository.save(deposito);});
+
   }
 
-  public AsignacionDTO crearAsignacionDesdeStock(
-          Map<String,String> body) {
+  public AsignacionDTO crearAsignacionDesdeStock(Map<String,String> body) {
 
     log.info("BODY RECIBIDO = {}", body);
 
@@ -187,55 +180,30 @@ public class Fachada implements FachadaLogistica {
 
     String necesidadID = body.get("necesidadID");
 
-    Integer cantidadAsignada =
-            Integer.valueOf(
-                    body.get("cantidadAsignada")
-            );
+    Integer cantidadAsignada = Integer.valueOf(body.get("cantidadAsignada"));
 
-    if (productoID == null) {
-      throw new IllegalArgumentException(
-              "Falta productoID"
-      );
+    if (productoID == null) {throw new IllegalArgumentException("Falta productoID");
+
     }
 
     if (necesidadID == null) {
-      throw new IllegalArgumentException(
-              "Falta necesidadID"
-      );
+
+      throw new IllegalArgumentException("Falta necesidadID");
+
     }
 
-    Deposito deposito = depositoRepository.findAll()
-            .stream()
-            .filter(d -> d.getStockActual()
-                    .stream()
-                    .anyMatch(p ->
-                            productoID.equals(
-                                    p.getProducto()
-                            )))
-            .findFirst()
-            .orElseThrow(() ->
-                    new NoSuchElementException(
-                            "No existe stock para el producto " + productoID
-                    ));
+    Deposito deposito = depositoRepository.findAll().stream().filter(d -> d.getStockActual().stream().anyMatch(p -> productoID.equals(p.getProducto()))).findFirst().orElseThrow(() -> new NoSuchElementException(
+                            "No existe stock para el producto " + productoID));
 
-    Paquete paquete = deposito.getStockActual()
-            .stream()
-            .filter(p ->
-                    productoID.equals(
-                            p.getProducto()
-                    ))
-            .findFirst()
-            .orElseThrow();
+    Paquete paquete = deposito.getStockActual().stream().filter(p -> productoID.equals(p.getProducto())).findFirst().orElseThrow();
 
     if (cantidadAsignada > paquete.getCantidad()) {
 
-      throw new IllegalArgumentException(
-              "No hay stock suficiente para el producto"
-      );
+      throw new IllegalArgumentException("No hay stock suficiente para el producto");
+
     }
 
-    Integer restante =
-            paquete.getCantidad() - cantidadAsignada;
+    Integer restante = paquete.getCantidad() - cantidadAsignada;
 
     if (restante == 0) {
 
@@ -244,31 +212,22 @@ public class Fachada implements FachadaLogistica {
     } else {
 
       paquete.setCantidad(restante);
+
     }
 
-    deposito.setCantidadStock(
-            deposito.getCantidadStock()
-                    - cantidadAsignada
-    );
+    deposito.setCantidadStock(deposito.getCantidadStock() - cantidadAsignada);
 
     depositoRepository.save(deposito);
 
-    Asignacion asignacion = new Asignacion(
-            paquete.getId().toString(),
-            null,
-            necesidadID,
-            cantidadAsignada,
-            "STOCK"
-    );
+    Asignacion asignacion = new Asignacion(paquete.getId().toString(), null, necesidadID, cantidadAsignada, "STOCK");
 
-    log.info(
-            "Asignacion creada necesidad={} cantidad={} origen=STOCK",
-            necesidadID,
-            cantidadAsignada
-    );
+    log.info("Asignacion creada necesidad={} cantidad={} origen=STOCK", necesidadID, cantidadAsignada);
 
-    Asignacion guardada =
-            asignacionRepository.save(asignacion);
+    Asignacion guardada = asignacionRepository.save(asignacion);
+
+    // PUBLICAR MENSAJE DE ASIGNACION CREADA POR STOCK
+
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ASIGNACION_STOCK_CREADA", guardada.getId().toString()));
 
     return new AsignacionDTO(
             guardada.getId().toString(),
@@ -443,6 +402,10 @@ public class Fachada implements FachadaLogistica {
 
     depositoRepository.save(deposito);
 
+    // PUBLICAR MENSAJE DE STOCK ACTUALIZADO
+
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "STOCK_ACTUALIZADO", depositoID));
+
     System.out.println("STOCK GUARDADO");
   }
 
@@ -491,6 +454,8 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion guardada = asignacionRepository.save(asignacion);
 
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ASIGNACION_CREADA", guardada.getId().toString()));
+
     Metrics.counter("logistica.asignaciones.generadas").increment();
 
     return new AsignacionDTO(
@@ -519,6 +484,10 @@ public class Fachada implements FachadaLogistica {
     Deposito deposito = new Deposito(depositoDTO.nombre(), depositoDTO.direccion(), depositoDTO.capacidadMaxima());
 
     Deposito guardado = depositoRepository.save(deposito);
+
+    // PUBLICAR MENSAJE DE DEPOSITO CREADO PARA MANDARLO A LA RABBITMQ
+
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "DEPOSITO_CREADO", guardado.getId().toString()));
 
     // Metrica de deposito creado
     Metrics.counter("logistica.depositos.creados").increment();
@@ -586,6 +555,9 @@ public class Fachada implements FachadaLogistica {
     deposito.setAlgoritmoMatchmaking(algoritmo);
 
     depositoRepository.save(deposito);
+
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ALGORITMO_CONFIGURADO", depositoID));
+
   }
 
   @Override
@@ -698,6 +670,10 @@ public class Fachada implements FachadaLogistica {
     asignacion.completarEntrega();
 
     asignacionRepository.save(asignacion);
+
+    // PUBLICAR MENSAJE DE ENTREGA REPORTADA
+
+    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ENTREGA_REPORTADA", paqueteDTO.id()));
 
     Metrics.counter("logistica.entregas.reportadas").increment();
   }
