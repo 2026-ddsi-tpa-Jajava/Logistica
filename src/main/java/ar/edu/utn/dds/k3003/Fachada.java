@@ -54,7 +54,7 @@ public class Fachada implements FachadaLogistica {
   private PublisherDonacion publisherDonacion;
 
   @Autowired
-  private PublisherConsulta publisherConsulta;
+  private IntegrationEventPublisher eventPublisher;
 
   @Autowired
   private DepositoRepository depositoRepository;
@@ -142,7 +142,8 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE STOCK VACIADO
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "STOCK_VACIADO", depositoID));
+    eventPublisher.publicarEvento("DEPOSITO_ACTUALIZADO", Map.of("depositoID", depositoID, "cantidadStock", 0));
+
   }
 
   public List<AsignacionDTO> obtenerAsignacionesPorEstado(EstadoAsignacion estado) {
@@ -227,7 +228,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE ASIGNACION CREADA POR STOCK
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ASIGNACION_STOCK_CREADA", guardada.getId().toString()));
+    eventPublisher.publicarEvento("ASIGNACION_REGISTRADA", Map.of("id", guardada.getId().toString(), "necesidadID", necesidadID));
 
     return new AsignacionDTO(
             guardada.getId().toString(),
@@ -404,7 +405,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE STOCK ACTUALIZADO
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "STOCK_ACTUALIZADO", depositoID));
+    eventPublisher.publicarEvento("DEPOSITO_ACTUALIZADO", Map.of("depositoID", depositoID, "cantidadStock", deposito.getCantidadStock()));
 
     System.out.println("STOCK GUARDADO");
   }
@@ -454,7 +455,7 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion guardada = asignacionRepository.save(asignacion);
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ASIGNACION_CREADA", guardada.getId().toString()));
+    eventPublisher.publicarEvento("ASIGNACION_REGISTRADA", Map.of("id", guardada.getId().toString(), "necesidadID", necesidadID, "idEntidad", idEntidad));
 
     Metrics.counter("logistica.asignaciones.generadas").increment();
 
@@ -487,7 +488,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE DEPOSITO CREADO PARA MANDARLO A LA RABBITMQ
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "DEPOSITO_CREADO", guardado.getId().toString()));
+    eventPublisher.publicarEvento("DEPOSITO_REGISTRADO", Map.of("id", guardado.getId().toString(), "nombre", guardado.getNombre(), "direccion", guardado.getDireccion(), "capacidadMaxima", guardado.getCapacidadMaxima()));
 
     // Metrica de deposito creado
     Metrics.counter("logistica.depositos.creados").increment();
@@ -556,7 +557,7 @@ public class Fachada implements FachadaLogistica {
 
     depositoRepository.save(deposito);
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ALGORITMO_CONFIGURADO", depositoID));
+    eventPublisher.publicarEvento("DEPOSITO_ACTUALIZADO", Map.of("depositoID", depositoID, "algoritmo", algoritmo.name()));
 
   }
 
@@ -673,7 +674,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE ENTREGA REPORTADA
 
-    publisherConsulta.publicar(new MensajeConsulta("LOGISTICA", "ENTREGA_REPORTADA", paqueteDTO.id()));
+    eventPublisher.publicarEvento("ENTREGA_REGISTRADA", Map.of("idPaquete", paqueteDTO.id(), "donacionID", paqueteDTO.donacionID()));
 
     Metrics.counter("logistica.entregas.reportadas").increment();
   }
