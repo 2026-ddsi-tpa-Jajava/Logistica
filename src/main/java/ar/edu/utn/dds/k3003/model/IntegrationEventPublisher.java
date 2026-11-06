@@ -21,7 +21,7 @@ public class IntegrationEventPublisher {
 
         Map<String,Object> evento = Map.of("id", UUID.randomUUID().toString(), "tipo", tipo, "version", 1L, "ocurridoEn", Instant.now().toString(), "payload", payload);
 
-        rabbitTemplate.convertAndSend("cqrs.events.queue", evento);
+        rabbitTemplate.convertAndSend("consultas.queue", evento);
 
     }
 }
