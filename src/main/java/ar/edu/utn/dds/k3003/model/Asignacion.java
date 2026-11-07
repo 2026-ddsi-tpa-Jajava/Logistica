@@ -2,6 +2,8 @@ package ar.edu.utn.dds.k3003.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 public class Asignacion {
 
@@ -15,6 +17,11 @@ public class Asignacion {
     private EstadoAsignacion estado;
     private String origenAsignacion;
     private String necesidadID;
+    private String depositoID;
+    private String donacionID;
+    private String productoID;
+    private LocalDateTime fechaCreacion;
+    private LocalDateTime fechaEntrega;
 
 
     public Asignacion() {
@@ -28,7 +35,17 @@ public class Asignacion {
         this.estado = EstadoAsignacion.ASIGNADA;
         this.origenAsignacion = origenAsignacion;
         this.necesidadID = necesidadID;
+        this.fechaCreacion = LocalDateTime.now();
 
+    }
+
+    public Asignacion(String idPaquete, String idEntidad, String necesidadID, Integer cantidadAsignada,
+                      String origenAsignacion, String depositoID, String donacionID, String productoID){
+
+        this(idPaquete, idEntidad, necesidadID, cantidadAsignada, origenAsignacion);
+        this.depositoID = depositoID;
+        this.donacionID = donacionID;
+        this.productoID = productoID;
     }
 
     public Long getId() {
@@ -57,8 +74,19 @@ public class Asignacion {
         return origenAsignacion;
     }
 
+    public String getDepositoID() {return depositoID;}
+
+    public String getDonacionID() {return donacionID;}
+
+    public String getProductoID() {return productoID;}
+
+    public LocalDateTime getFechaCreacion() {return fechaCreacion;}
+
+    public LocalDateTime getFechaEntrega() {return fechaEntrega;}
+
     public void completarEntrega(){
 
         this.estado = EstadoAsignacion.COMPLETADA;
+        this.fechaEntrega = LocalDateTime.now();
     }
 }

@@ -142,7 +142,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE STOCK VACIADO
 
-    eventPublisher.publicarEvento("DEPOSITO_ACTUALIZADO", Map.of("depositoID", depositoID, "cantidadStock", 0));
+    publicarDeposito("DEPOSITO_ACTUALIZADO", deposito);
 
   }
 
@@ -220,7 +220,8 @@ public class Fachada implements FachadaLogistica {
 
     depositoRepository.save(deposito);
 
-    Asignacion asignacion = new Asignacion(paquete.getId().toString(), null, necesidadID, cantidadAsignada, "STOCK");
+    Asignacion asignacion = new Asignacion(paquete.getId().toString(), null, necesidadID, cantidadAsignada, "STOCK",
+            deposito.getId().toString(), paquete.getDonacionID(), productoID);
 
     log.info("Asignacion creada necesidad={} cantidad={} origen=STOCK", necesidadID, cantidadAsignada);
 
@@ -228,7 +229,9 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE ASIGNACION CREADA POR STOCK
 
-    eventPublisher.publicarEvento("ASIGNACION_REGISTRADA", Map.of("id", guardada.getId().toString(), "necesidadID", necesidadID));
+    publicarAsignacion("ASIGNACION_REGISTRADA", guardada);
+
+    publicarDeposito("DEPOSITO_ACTUALIZADO", deposito);
 
     return new AsignacionDTO(
             guardada.getId().toString(),
@@ -238,6 +241,53 @@ public class Fachada implements FachadaLogistica {
             LocalDateTime.now(),
             EstadoAsginacionEnum.ASIGNADA
     );
+  }
+
+  // ---------------------------------------EVENTOS PARA EL MODELO DE LECTURA (CQRS)------------------------------------
+
+  private void publicarDeposito(String tipo, Deposito deposito) {
+
+    Map<String, Object> payload = new HashMap<>();
+
+    payload.put("id", deposito.getId().toString());
+    payload.put("depositoID", deposito.getId().toString());
+    payload.put("nombre", deposito.getNombre());
+    payload.put("direccion", deposito.getDireccion());
+    payload.put("capacidadMaxima", deposito.getCapacidadMaxima());
+    payload.put("cantidadStock", deposito.getCantidadStock());
+    payload.put("algoritmo", deposito.getAlgoritmoMatchmaking() == null ? null : deposito.getAlgoritmoMatchmaking().name());
+    payload.put("stockActual", deposito.getStockActual().stream()
+            .map(p -> {
+              Map<String, Object> item = new HashMap<>();
+              item.put("producto", p.getProducto());
+              item.put("donacionID", p.getDonacionID());
+              item.put("cantidad", p.getCantidad());
+              return item;
+            })
+            .toList());
+
+    eventPublisher.publicarEvento(tipo, payload);
+  }
+
+  private void publicarAsignacion(String tipo, Asignacion asignacion) {
+
+    Map<String, Object> payload = new HashMap<>();
+
+    payload.put("id", asignacion.getId().toString());
+    payload.put("asignacionID", asignacion.getId().toString());
+    payload.put("necesidadID", asignacion.getNecesidadID());
+    payload.put("idEntidad", asignacion.getIdEntidad());
+    payload.put("depositoID", asignacion.getDepositoID());
+    payload.put("donacionID", asignacion.getDonacionID());
+    payload.put("productoID", asignacion.getProductoID());
+    payload.put("idPaquete", asignacion.getIdPaquete());
+    payload.put("cantidad", asignacion.getCantidadAsignada());
+    payload.put("estado", asignacion.getEstado().name());
+    payload.put("origen", asignacion.getOrigenAsignacion());
+    payload.put("fecha", asignacion.getFechaCreacion() == null ? null : asignacion.getFechaCreacion().atZone(java.time.ZoneId.systemDefault()).toInstant().toString());
+    payload.put("fechaEntrega", asignacion.getFechaEntrega() == null ? null : asignacion.getFechaEntrega().atZone(java.time.ZoneId.systemDefault()).toInstant().toString());
+
+    eventPublisher.publicarEvento(tipo, payload);
   }
 
   // ---------------------------------------TAREAS DELEGADAS AL WORKER--------------------------------------------------
@@ -405,7 +455,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE STOCK ACTUALIZADO
 
-    eventPublisher.publicarEvento("DEPOSITO_ACTUALIZADO", Map.of("depositoID", depositoID, "cantidadStock", deposito.getCantidadStock()));
+    publicarDeposito("DEPOSITO_ACTUALIZADO", deposito);
 
     System.out.println("STOCK GUARDADO");
   }
@@ -439,7 +489,10 @@ public class Fachada implements FachadaLogistica {
                     idEntidad,
                     necesidadID,
                     cantidadAsignada,
-                    "MATCHMAKING"
+                    "MATCHMAKING",
+                    depositoID,
+                    donacionID,
+                    productoID
             );
 
     if (sobrante > 0) {
@@ -455,7 +508,9 @@ public class Fachada implements FachadaLogistica {
 
     Asignacion guardada = asignacionRepository.save(asignacion);
 
-    eventPublisher.publicarEvento("ASIGNACION_REGISTRADA", Map.of("id", guardada.getId().toString(), "necesidadID", necesidadID, "idEntidad", idEntidad));
+    publicarAsignacion("ASIGNACION_REGISTRADA", guardada);
+
+    publicarDeposito("DEPOSITO_ACTUALIZADO", deposito);
 
     Metrics.counter("logistica.asignaciones.generadas").increment();
 
@@ -488,7 +543,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE DEPOSITO CREADO PARA MANDARLO A LA RABBITMQ
 
-    eventPublisher.publicarEvento("DEPOSITO_REGISTRADO", Map.of("id", guardado.getId().toString(), "nombre", guardado.getNombre(), "direccion", guardado.getDireccion(), "capacidadMaxima", guardado.getCapacidadMaxima()));
+    publicarDeposito("DEPOSITO_REGISTRADO", guardado);
 
     // Metrica de deposito creado
     Metrics.counter("logistica.depositos.creados").increment();
@@ -557,7 +612,7 @@ public class Fachada implements FachadaLogistica {
 
     depositoRepository.save(deposito);
 
-    eventPublisher.publicarEvento("DEPOSITO_ACTUALIZADO", Map.of("depositoID", depositoID, "algoritmo", algoritmo.name()));
+    publicarDeposito("DEPOSITO_ACTUALIZADO", deposito);
 
   }
 
@@ -614,7 +669,10 @@ public class Fachada implements FachadaLogistica {
                     necesidadSeleccionada.entidadID(),
                     necesidadID,
                     cantidadAsignada,
-                    "MATCHMAKING"
+                    "MATCHMAKING",
+                    depositoID,
+                    paqueteDTO.donacionID(),
+                    paqueteDTO.producto()
             );
 
     if (sobrante > 0) {
@@ -629,6 +687,10 @@ public class Fachada implements FachadaLogistica {
     System.out.println("Antes del save");
     Asignacion guardada = asignacionRepository.save(asignacion);
     System.out.println("Asignacion guardada: " + guardada.getId());
+
+    publicarAsignacion("ASIGNACION_REGISTRADA", guardada);
+
+    publicarDeposito("DEPOSITO_ACTUALIZADO", deposito);
 
     // Metrica de asignacion creada
     Metrics.counter("logistica.asignaciones.generadas").increment();
@@ -674,7 +736,7 @@ public class Fachada implements FachadaLogistica {
 
     // PUBLICAR MENSAJE DE ENTREGA REPORTADA
 
-    eventPublisher.publicarEvento("ENTREGA_REGISTRADA", Map.of("idPaquete", paqueteDTO.id(), "donacionID", paqueteDTO.donacionID()));
+    publicarAsignacion("ENTREGA_REGISTRADA", asignacion);
 
     Metrics.counter("logistica.entregas.reportadas").increment();
   }
